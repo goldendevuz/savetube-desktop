@@ -1,0 +1,134 @@
+name: SaveTube macOS and Linux packages
+
+# Builds the SaveTube desktop packages that windows-exe.yml does not: macOS (Apple silicon and Intel .dmg)
+# and Linux x64 (.deb, .rpm and an AppImage). Started by hand (`gh workflow run desktop-packages.yml`), or
+# by pushing a branch called `packages-build`. Nothing is code-signed or notarised, so macOS asks the
+# first time (right-click, Open) and Linux needs no extra step. A newer run cancels the one in progress.
+on:
+  workflow_dispatch:
+  push:
+    branches: [packages-build]
+
+concurrency:
+  group: desktop-packages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package:
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple silicon
+            slug: macos-arm64
+            runner: macos-15
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin --bundles dmg
+          - name: macOS Intel
+            slug: macos-x64
+            # Cross-compiles x86_64 on Apple silicon, as Tauri's own CI guide does.
+            runner: macos-15
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin --bundles dmg
+          # .deb and .rpm use the system WebKitGTK, so they build on the oldest supported base; the
+          # AppImage bundles its own WebKitGTK and GStreamer, so it builds on 24.04.
+          - name: Linux x64 (deb, rpm)
+            slug: linux-x64
+            runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: --target x86_64-unknown-linux-gnu --bundles deb,rpm
+          - name: Linux x64 AppImage
+            slug: linux-x64-appimage
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            args: --target x86_64-unknown-linux-gnu --bundles appimage
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/apt-install
+        with:
+          cache-key: packages-${{ matrix.runner }}
+          packages: |
+            build-essential
+            curl
+            file
+            gstreamer1.0-alsa
+            gstreamer1.0-gl
+            gstreamer1.0-libav
+            gstreamer1.0-plugins-bad
+            gstreamer1.0-plugins-base
+            gstreamer1.0-plugins-good
+            gstreamer1.0-pulseaudio
+            libayatana-appindicator3-dev
+            libfuse2
+            libgtk-3-dev
+            librsvg2-dev
+            libssl-dev
+            libwebkit2gtk-4.1-dev
+            libxdo-dev
+            patchelf
+            pkg-config
+            rpm
+            wget
+            xdg-utils
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install Rust target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build data
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          shared-key: savetube-${{ matrix.slug }}-${{ matrix.runner }}-fast
+          save-if: true
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate the build configuration
+        shell: bash
+        run: |
+          export BUILD_NUMBER=$((GITHUB_RUN_NUMBER + 100))
+          node scripts/write-nightly-config.mjs
+
+      - name: Build the packages
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_API_SECRET: ${{ secrets.LASTFM_API_SECRET }}
+        run: pnpm tauri build ${{ matrix.args }} --config src-tauri/tauri.nightly.generated.json -- --profile fast
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: SaveTube-${{ matrix.slug }}-${{ github.run_number }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/fast/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.target }}/fast/bundle/deb/*.deb
+            src-tauri/target/${{ matrix.target }}/fast/bundle/rpm/*.rpm
+            src-tauri/target/${{ matrix.target }}/fast/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
