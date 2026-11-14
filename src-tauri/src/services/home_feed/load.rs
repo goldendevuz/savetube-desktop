@@ -190,6 +190,7 @@ impl HomeFeedService {
             feed.hides_seen = inputs.hides_seen_videos;
             feed.subscriptions_kept_off = !inputs.subscriptions_on_home;
             feed.min_views = inputs.exclusions.min_views();
+            feed.duration_group = inputs.exclusions.duration_group();
             feed.min_subscribers = inputs.exclusions.min_subscribers();
             feed.hide_music_videos = inputs.exclusions.hides_music_videos();
         }
