@@ -218,7 +218,6 @@ mod tests {
             "My first post about Rust",
             "Dev"
         )));
-        assert!();
         assert!(!looks_like_music_video(&video(
             "Songbird migration in spring",
             "Nature"
