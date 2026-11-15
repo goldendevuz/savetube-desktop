@@ -122,6 +122,11 @@ pub async fn duration_group(pool: &SqlitePool) -> Option<DurationRange> {
         .await
         .ok()
         .flatten()?;
+    // "Up to 1 minute" is no longer offered (Home holds no Shorts, so it left the page empty); a choice
+    // saved before is read as any length.
+    if key.trim().eq_ignore_ascii_case("g1") {
+        return None;
+    }
     duration_range(&key)
 }
 

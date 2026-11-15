@@ -134,9 +134,8 @@ export function ContentTab() {
           ]} />
         </SettingItem>
         <SettingItem title={getString('settings_home_duration_group')} description={getString('settings_home_duration_group_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)}>
-          <Select value={homeDurationGroup} onChange={setHomeDurationGroup} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)} options={[
+          <Select value={homeDurationGroup === 'g1' ? 'any' : homeDurationGroup} onChange={setHomeDurationGroup} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)} options={[
             { value: 'any', label: getString('settings_home_duration_any') },
-            { value: 'g1', label: getString('settings_home_duration_g1') },
             { value: 'g2', label: getString('settings_home_duration_g2') },
             { value: 'g3', label: getString('settings_home_duration_g3') },
             { value: 'g4', label: getString('settings_home_duration_g4') },

@@ -35,6 +35,7 @@ import { useHomeShortsShelf } from "../lib/useHomeShortsShelf";
 import { useShortsEnabled } from "../lib/useShortsContent";
 import { HomeFeedFooter } from "../components/home/HomeFeedFooter";
 import { HomeFeedMessage } from "../components/home/HomeFeedMessage";
+import { activeHomeFilters } from "../lib/activeHomeFilters";
 import { HomeFeedButton } from "../components/home/HomeFeedButton";
 import { HomeChipRow } from "../components/home/HomeChipRow";
 import { HomeMixCard } from "../components/home/HomeMixCard";
@@ -46,6 +47,7 @@ interface HomeProps {
 
 /** Home: the backend builds the feed (services/home_feed); this page lays it out. */
 export const Home: React.FC<HomeProps> = ({ onPlay, onAddToQueue }) => {
+  const settingValues = useAppSettingsStore((state) => state.values);
   const homeFeedEnabled = useAppSettingsStore((state) => state.values[SETTINGS.HOME_FEED_ENABLED] !== "false");
   const continueWatchingEnabled = useAppSettingsStore(
     (state) => state.values[SETTINGS.CONTINUE_WATCHING_ENABLED] !== "false",
@@ -238,6 +240,11 @@ export const Home: React.FC<HomeProps> = ({ onPlay, onAddToQueue }) => {
         title={getString("home_feed_empty_title")}
         body={getString("home_feed_empty_body")}
         action={refreshButton}
+        details={{
+          title: getString("home_feed_filters_title"),
+          items: activeHomeFilters(settingValues),
+          hint: getString("home_feed_filters_hint"),
+        }}
       />
     );
   } else {
