@@ -25,6 +25,11 @@ const TITLE_MARKERS: &[&str] = &[
     "karaoke",
     "nightcore",
     "mashup",
+    "medley",
+    "nasheed",
+    "nashid",
+    "anasheed",
+    "нашид",
     "lofi",
     "lo-fi",
     "(audio)",
@@ -208,6 +213,14 @@ mod tests {
             "Jon"
         )));
         assert!(looks_like_music_video(&video("Night drive 🎶", "Jon")));
+        assert!(looks_like_music_video(&video(
+            "Wedding Nasheed - Al Muqit",
+            "Laa"
+        )));
+        assert!(looks_like_music_video(&video(
+            "Arabic Nasheed Medley",
+            "Jon"
+        )));
         assert!(looks_like_music_video(&video("Anything", "Sony Music")));
         assert!(looks_like_music_video(&video("Anything", "Nevo Musiqa")));
     }

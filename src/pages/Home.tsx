@@ -8,6 +8,7 @@ import { getString } from "../lib/i18n/index";
 import { SETTINGS } from "../lib/settings/schema";
 import { useHomeFeed } from "../lib/useHomeFeed";
 import { useContinueWatching } from "../lib/useContinueWatching";
+import { looksLikeMusicVideo } from "../lib/hideMusicRule";
 import { useFeedVisibilityFilter } from "../lib/useWatchedFilter";
 import { useGridStyle } from "../lib/useGridColumns";
 import {
@@ -147,9 +148,13 @@ export const Home: React.FC<HomeProps> = ({ onPlay, onAddToQueue }) => {
   const shortsShelvesEnabled = useAppSettingsStore((state) => state.values[SETTINGS.SHORTS_SHELF_ENABLED] !== "false");
   const shortsEnabled = useShortsEnabled();
   const homeShorts = useHomeShortsShelf(homeFeedEnabled && homeShortsEnabled && shortsShelvesEnabled && shortsEnabled);
+  const hideMusicVideos = useAppSettingsStore((state) => state.values[SETTINGS.HOME_HIDE_MUSIC_VIDEOS] === "true");
   const shelfVideos = useMemo(
-    () => continueWatching.videos.filter((video) => !isHidden(video)),
-    [continueWatching.videos, isHidden],
+    () =>
+      continueWatching.videos.filter(
+        (video) => !isHidden(video) && !(hideMusicVideos && looksLikeMusicVideo(video)),
+      ),
+    [continueWatching.videos, isHidden, hideMusicVideos],
   );
   const homeShelves = useMemo(
     () =>
