@@ -104,6 +104,7 @@ setting	home_pin_fresh_subs	PROFILE	settings	Pin the newest uploads of followed 
 setting	home_hide_music_videos	PROFILE	settings	Keep music videos off Home
 setting	home_min_views	PROFILE	settings	Hide videos with fewer views than this from Home
 setting	home_duration_group	PROFILE	settings	Keep only videos in this length group (g1 to g8) on Home
+setting	home_feed_scope	PROFILE	settings	Where Home draws from: off, subscribed (only followed channels) or unsubscribed
 setting	stable_volume_enabled	PROFILE	settings	Playback preference
 setting	sponsorblock_categories	PROFILE	settings	SponsorBlock preference
 setting	sponsorblock_enabled	PROFILE	settings	SponsorBlock preference

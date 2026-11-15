@@ -189,6 +189,7 @@ impl HomeFeedService {
             feed.max_video_age_ms = inputs.max_video_age_ms;
             feed.hides_seen = inputs.hides_seen_videos;
             feed.subscriptions_kept_off = !inputs.subscriptions_on_home;
+            feed.feed_scope = inputs.feed_scope;
             feed.min_views = inputs.exclusions.min_views();
             feed.duration_group = inputs.exclusions.duration_group();
             feed.min_subscribers = inputs.exclusions.min_subscribers();
@@ -250,7 +251,13 @@ impl HomeFeedService {
             .iter()
             .map(|c| c.id().to_string())
             .collect();
-        let mix = lanes::assemble(&lanes, &on_screen, followed.len(), brain.total_interactions);
+        let mix = lanes::assemble(
+            &lanes,
+            &on_screen,
+            followed.len(),
+            brain.total_interactions,
+            inputs.exclusions.subscribed_only(),
+        );
         if mix.cards.is_empty() {
             // Nothing to show because no search could be reached is a failure, not an empty feed.
             let error = nothing_reached.then_some(NETWORK_FAILED);

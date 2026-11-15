@@ -366,6 +366,7 @@ pub fn assemble(
     on_screen: &HashSet<String>,
     sub_count: usize,
     total_interactions: i32,
+    subscribed_only: bool,
 ) -> Mix {
     let mut page = Page::default();
     if !on_screen.is_empty() {
@@ -392,6 +393,7 @@ pub fn assemble(
         sub_count,
         total_interactions,
         !lanes.best_neighbours.is_empty(),
+        subscribed_only,
     );
     let subs_lane: Vec<Card> = lanes
         .overflow_fresh

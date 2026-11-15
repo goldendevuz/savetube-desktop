@@ -103,6 +103,7 @@ const SHARED: &[Shared] = &[
     ),
     shared("home_min_views", "home_min_views", Kind::Whole),
     shared("home_duration_group", "home_duration_group", Kind::Text),
+    shared("home_feed_scope", "home_feed_scope", Kind::Text),
     shared("home_min_subscribers", "home_min_subscribers", Kind::Whole),
     shared(
         "home_hide_music_videos",
