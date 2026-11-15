@@ -11,6 +11,7 @@ describe("looksLikeMusicVideo", () => {
     expect(looksLikeMusicVideo(video("Любовь | текст песни"))).toBe(true);
     expect(looksLikeMusicVideo(video("Yangi qo\u02bbshiq 2026"))).toBe(true);
     expect(looksLikeMusicVideo(video("Yeni şarkı sözleri"))).toBe(true);
+    expect(looksLikeMusicVideo(video("Eng sara taronalar (2026)"))).toBe(true);
     expect(looksLikeMusicVideo(video("Anything", "Artist - Topic"))).toBe(true);
     expect(looksLikeMusicVideo(video("Anything", "Sony Music"))).toBe(true);
   });

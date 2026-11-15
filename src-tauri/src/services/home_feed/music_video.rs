@@ -54,13 +54,14 @@ const TITLE_MARKERS: &[&str] = &[
     "кавер",
     "караоке",
     "саундтрек",
-    // Uzbek: "klip", "qo'shiq", "musiqa", "ashula", "konsert"
+    // Uzbek: "klip", "qo'shiq", "musiqa", "ashula", "tarona" (taronalar), "konsert"
     "klip",
     "qo'shiq",
     "qo'shig",
     "qoshiq",
     "musiqa",
     "ashula",
+    "tarona",
     "konsert",
     // Turkish: "şarkı", "müzik", "sözleri"
     "şarkı",
@@ -194,6 +195,10 @@ mod tests {
         assert!(looks_like_music_video(&video("Yangi qoʻshiq", "Jon")));
         assert!(looks_like_music_video(&video("Eng yaxshi musiqa", "Jon")));
         assert!(looks_like_music_video(&video("Ashula tinglang", "Jon")));
+        assert!(looks_like_music_video(&video(
+            "Eng sara taronalar (2026)",
+            "Jon"
+        )));
         assert!(looks_like_music_video(&video(
             "Yeni şarkı sözleri",
             "Kanal"

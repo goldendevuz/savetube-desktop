@@ -55,6 +55,7 @@ const TITLE_MARKERS = [
   "qoshiq",
   "musiqa",
   "ashula",
+  "tarona",
   "konsert",
   "şarkı",
   "müzik",
