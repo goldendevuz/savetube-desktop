@@ -8,8 +8,9 @@ use sqlx::SqlitePool;
 
 use super::card::Card;
 use super::channel_memory::Watch;
+use super::content_rules::{ContentRules, parse_languages};
 use super::filters::{
-    DurationRange, duration_range, is_below_min_views, is_outside_duration_range, is_within,
+    DurationRange, duration_ranges, is_below_min_views, is_outside_duration_ranges, is_within,
 };
 use super::music_video::looks_like_music_video;
 use super::seeds::{SeedInput, SeedSource};
@@ -43,6 +44,12 @@ const DURATION_GROUP_SETTING: &str = "home_duration_group";
 const PIN_FRESH_SUBS_SETTING: &str = "home_pin_fresh_subs";
 /// Settings → Content, "Hide music videos".
 const HIDE_MUSIC_VIDEOS_SETTING: &str = "home_hide_music_videos";
+/// Settings → Content, "Hide movie and TV clips"; on unless the viewer turned it off.
+const HIDE_MEDIA_CLIPS_SETTING: &str = "home_hide_media_clips";
+/// Settings → Content, "Hide gaming videos"; off unless the viewer turned it on.
+const HIDE_GAMING_SETTING: &str = "home_hide_gaming";
+/// Settings → Content, "Languages"; "any" or unset is every language, otherwise codes joined by commas.
+const LANGUAGES_SETTING: &str = "home_languages";
 
 /// Settings → Content, "Where Home draws from"; "off" or unset is everything, otherwise "subscribed"
 /// or "unsubscribed". It replaces the older "Subscriptions on Home" switch, which is still read when
@@ -116,13 +123,20 @@ pub async fn min_views(pool: &SqlitePool) -> Option<u64> {
     (views > 0).then_some(views)
 }
 
-/// The video length group Home is limited to, by the viewer's choice; `None` when off.
-pub async fn duration_group(pool: &SqlitePool) -> Option<DurationRange> {
-    let key = get_setting(pool, DURATION_GROUP_SETTING)
+/// The video length groups Home is limited to, by the viewer's choice (one or several, joined by
+/// commas); `None` when off.
+pub async fn duration_group(pool: &SqlitePool) -> Option<Vec<DurationRange>> {
+    let setting = get_setting(pool, DURATION_GROUP_SETTING)
         .await
         .ok()
         .flatten()?;
-    duration_range(&key)
+    // "Up to 1 minute" is no longer offered (Home holds no Shorts, so it left the page empty); a choice
+    // saved before is read as any length.
+    let kept: Vec<&str> = setting
+        .split(',')
+        .filter(|key| !key.trim().eq_ignore_ascii_case("g1"))
+        .collect();
+    duration_ranges(&kept.join(","))
 }
 
 /// The fewest subscribers a channel may have to show on Home, by the viewer's choice; `None` when off.
@@ -154,6 +168,32 @@ pub async fn hides_music_videos(pool: &SqlitePool) -> bool {
         .ok()
         .flatten()
         .is_some_and(|value| value == "true")
+}
+
+/// The viewer's movie-clip and language rules. Movie and TV clips stay off Home unless the viewer says
+/// otherwise; every language shows unless the viewer picked some.
+pub async fn content_rules(pool: &SqlitePool) -> ContentRules {
+    let hide_media_clips = get_setting(pool, HIDE_MEDIA_CLIPS_SETTING)
+        .await
+        .ok()
+        .flatten()
+        .is_none_or(|value| value != "false");
+    let hide_gaming = get_setting(pool, HIDE_GAMING_SETTING)
+        .await
+        .ok()
+        .flatten()
+        .is_some_and(|value| value == "true");
+    let languages = get_setting(pool, LANGUAGES_SETTING)
+        .await
+        .ok()
+        .flatten()
+        .map(|setting| parse_languages(&setting))
+        .unwrap_or_default();
+    ContentRules {
+        hide_media_clips,
+        hide_gaming,
+        languages,
+    }
 }
 
 /// Whether the viewer chose never to be recommended a video they were already shown.
@@ -230,10 +270,12 @@ pub struct Exclusions {
     age_limit: Option<(u64, u64)>,
     /// Set when the viewer keeps music videos off Home.
     hide_music_videos: bool,
+    /// The movie-clip and language rules.
+    content_rules: ContentRules,
     /// The fewest views a video may have, when the viewer set a minimum.
     min_views: Option<u64>,
     /// The video length group Home is limited to, when the viewer chose one.
-    duration_group: Option<DurationRange>,
+    duration_group: Option<Vec<DurationRange>>,
     /// The channels Home is limited to (the followed ones) when the viewer chose "only my subscriptions".
     only_channels: Option<HashSet<String>>,
     /// The fewest subscribers a channel may have, when the viewer set a minimum, and the counts
@@ -267,8 +309,8 @@ impl Exclusions {
 
     /// The video length group Home is limited to, when the viewer chose one.
     #[must_use]
-    pub fn duration_group(&self) -> Option<DurationRange> {
-        self.duration_group
+    pub fn duration_group(&self) -> Option<Vec<DurationRange>> {
+        self.duration_group.clone()
     }
 
     /// Whether Home draws only from the channels the viewer follows.
@@ -280,6 +322,12 @@ impl Exclusions {
     /// Whether music videos are kept off Home.
     pub fn hides_music_videos(&self) -> bool {
         self.hide_music_videos
+    }
+
+    /// The movie-clip and language rules.
+    #[must_use]
+    pub fn content_rules(&self) -> ContentRules {
+        self.content_rules.clone()
     }
 
     /// The subscriber counts known so far, by channel id.
@@ -301,7 +349,8 @@ impl Exclusions {
                 .is_some_and(|min| is_below_min_views(&card.video, min))
             || self
                 .duration_group
-                .is_some_and(|group| is_outside_duration_range(&card.video, group))
+                .as_deref()
+                .is_some_and(|groups| is_outside_duration_ranges(&card.video, groups))
             || self
                 .only_channels
                 .as_ref()
@@ -326,6 +375,7 @@ impl Exclusions {
                     .is_none_or(|subscribers| *subscribers < min)
             })
             || (self.hide_music_videos && looks_like_music_video(&card.video))
+            || self.content_rules.hides(&card.video)
             || self
                 .matchers
                 .blocks_text(&card.video.title, &card.video.channel_name, &self.spec)
@@ -395,6 +445,7 @@ impl Inputs {
         let subscriptions_on_home = feed_scope != FeedScope::Unsubscribed;
         let pin_fresh_subs = pins_fresh_subs(pool).await;
         let hide_music_videos = hides_music_videos(pool).await;
+        let content_rules = content_rules(pool).await;
         let min_views = min_views(pool).await;
         let duration_group = duration_group(pool).await;
         let min_subscribers = min_subscribers(pool).await;
@@ -421,6 +472,7 @@ impl Inputs {
                 },
                 age_limit: max_video_age_ms.map(|max_age_ms| (max_age_ms, now_ms)),
                 hide_music_videos,
+                content_rules,
                 min_views,
                 duration_group,
                 only_channels: (feed_scope == FeedScope::Subscribed).then(|| subscriptions.ids()),

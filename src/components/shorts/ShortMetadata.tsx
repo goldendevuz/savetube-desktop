@@ -108,7 +108,7 @@ export function ShortMetadata({
       <div className="inline-flex w-fit items-center gap-2 rounded-full bg-chrome-black/60 px-3 py-1.5 text-xs text-chrome-neutral-300">
         <Music2 className="h-3.5 w-3.5 shrink-0" />
         <span className="max-w-[220px] truncate lg:max-w-[240px]">
-          Original audio - {channelName}
+          {getString("short_original_audio_by", channelName)}
         </span>
       </div>
     </div>

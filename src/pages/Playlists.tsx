@@ -154,7 +154,7 @@ export const Playlists: React.FC<PlaylistsProps> = ({ onPlay: _onPlay }) => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-chrome-neutral-100">{getString('library_playlists_label')}</h1>
               <p className="mt-1 text-sm text-chrome-neutral-400">
-                Manage owned and saved media collections from one dashboard.
+                {getString('playlists_page_subtitle')}
               </p>
             </div>
 
@@ -168,7 +168,7 @@ export const Playlists: React.FC<PlaylistsProps> = ({ onPlay: _onPlay }) => {
               <OpenPlaylistFileButton />
               <Button onClick={() => setShowCreateModal(true)} className="shrink-0">
                 <Plus size={16} />
-                Create Playlist
+                {getString('playlists_create_button')}
               </Button>
             </div>
           </div>
@@ -208,7 +208,7 @@ export const Playlists: React.FC<PlaylistsProps> = ({ onPlay: _onPlay }) => {
               <ListVideo className="mb-4 text-chrome-neutral-600" size={48} />
               <h3 className="font-medium text-chrome-neutral-200">{getString('playlists_no_playlists_yet')}</h3>
               <p className="mt-1 max-w-sm text-sm text-chrome-neutral-500">
-                Create a playlist to start building a media collection.
+                {getString('playlists_empty_hint')}
               </p>
             </div>
           ) : visiblePlaylists.length === 0 ? (

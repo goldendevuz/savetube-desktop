@@ -213,7 +213,7 @@ export function SponsorBlockStatsDashboard({
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <span className="font-mono text-2xl font-bold text-chrome-neutral-100">{segmentsSkipped}</span>
-                <span className="text-[10px] uppercase tracking-widest text-chrome-neutral-500">total</span>
+                <span className="text-[10px] uppercase tracking-widest text-chrome-neutral-500">{getString("sponsorblock_stats_total")}</span>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1">
@@ -230,7 +230,7 @@ export function SponsorBlockStatsDashboard({
 
       <div className="col-span-2 flex justify-end lg:col-span-4">
         <Button variant="secondary" size="sm" onClick={onReset}>
-          Reset stats
+          {getString("sponsorblock_stats_reset")}
         </Button>
       </div>
     </div>

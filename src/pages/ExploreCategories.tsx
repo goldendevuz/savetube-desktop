@@ -10,7 +10,7 @@ import { getString } from '../lib/i18n/index';
 import { EXPLORE_DESTINATIONS, shelvesWithShorts, useExplore } from '../lib/useExplore';
 import { useShortsEnabled, videosWithShorts } from '../lib/useShortsContent';
 import { useInfiniteScroll } from '../lib/useInfiniteScroll';
-import { REGION_OPTIONS } from '../lib/regionOptions';
+import { regionOptions } from '../lib/regionOptions';
 import type { VideoSummary } from '../types/video';
 
 type ExploreCategoriesProps = {
@@ -35,7 +35,7 @@ export default function ExploreCategories({ onPlay, onAddToQueue }: ExploreCateg
   });
 
   const currentRegionLabel = useMemo(
-    () => REGION_OPTIONS.find((option) => option.value === region)?.label ?? region,
+    () => regionOptions().find((option) => option.value === region)?.label ?? region,
     [region],
   );
   const destinations = EXPLORE_DESTINATIONS.map((destination) => ({ ...destination, label: getString(destination.labelKey) }));
@@ -59,7 +59,7 @@ export default function ExploreCategories({ onPlay, onAddToQueue }: ExploreCateg
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {explore.showRegionPicker && (
-                <Select value={region} onChange={explore.setRegion} options={REGION_OPTIONS} className="w-48" />
+                <Select value={region} onChange={explore.setRegion} options={regionOptions()} className="w-48" />
               )}
               <IconButton
                 aria-label={getString('refresh')}

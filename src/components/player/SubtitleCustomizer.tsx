@@ -100,7 +100,7 @@ export const SubtitleCustomizer: React.FC = () => {
       {/* Live Preview Box */}
       <div className="relative flex flex-col justify-end items-center h-28 w-full rounded-lg bg-chrome-zinc-950/80 border border-chrome-white/5 overflow-hidden pattern-grid">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-[10px] text-chrome-zinc-500 font-mono">
-          PREVIEW BOUNDS
+          {getString("subtitle_preview_bounds")}
         </div>
         <div
           className="mb-4 px-3 py-1.5 rounded text-center transition-all duration-150"
@@ -118,7 +118,7 @@ export const SubtitleCustomizer: React.FC = () => {
             boxShadow: "0 10px 25px -5px color-mix(in srgb, var(--color-chrome-black) 50%, transparent)",
           }}
         >
-          Preview Subtitle
+          {getString("subtitle_preview_text")}
         </div>
       </div>
 
@@ -284,7 +284,7 @@ export const SubtitleCustomizer: React.FC = () => {
         className="mt-2 flex h-9 items-center justify-center gap-2 rounded-md border border-chrome-white/10 bg-chrome-white/5 text-xs font-bold text-chrome-zinc-200 transition-colors hover:bg-chrome-white/10 hover:text-chrome-white"
       >
         <Undo2 size={14} />
-        Reset to Default
+        {getString("subtitle_reset_default")}
       </button>
     </div>
   );

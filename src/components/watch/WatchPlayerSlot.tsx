@@ -33,7 +33,7 @@ export function WatchPlayerSlot() {
       {isFloating && (
         <button type="button" onClick={expandVideoPlayer} className={overlayClass}>
           <PictureInPicture2 className="h-7 w-7" />
-          Playing in mini player — tap to expand
+          {getString("watch_mini_player_hint")}
         </button>
       )}
 
