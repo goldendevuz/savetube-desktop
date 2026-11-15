@@ -4,13 +4,16 @@ import { SETTINGS } from "./settings/schema";
 
 describe("activeHomeFilters", () => {
   it("lists nothing when no filter is on", () => {
-    expect(activeHomeFilters({})).toEqual([]);
+    expect(activeHomeFilters({ [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false" })).toEqual([]);
     expect(
       activeHomeFilters({
         [SETTINGS.HOME_MIN_VIEWS]: "0",
         [SETTINGS.HOME_DURATION_GROUP]: "any",
         [SETTINGS.HOME_FEED_SCOPE]: "off",
         [SETTINGS.HOME_HIDE_MUSIC_VIDEOS]: "false",
+        [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false",
+        [SETTINGS.HOME_HIDE_GAMING]: "false",
+        [SETTINGS.HOME_LANGUAGES]: "any",
       }),
     ).toEqual([]);
   });
@@ -21,6 +24,7 @@ describe("activeHomeFilters", () => {
       [SETTINGS.HOME_MIN_SUBSCRIBERS]: "1000000",
       [SETTINGS.HOME_DURATION_GROUP]: "g4",
       [SETTINGS.HOME_HIDE_MUSIC_VIDEOS]: "true",
+      [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false",
       [SETTINGS.HOME_FEED_SCOPE]: "unsubscribed",
     });
     expect(filters).toHaveLength(5);
@@ -30,13 +34,30 @@ describe("activeHomeFilters", () => {
   });
 
   it("names every chosen length range", () => {
-    const filters = activeHomeFilters({ [SETTINGS.HOME_DURATION_GROUP]: "g3,g4" });
+    const filters = activeHomeFilters({
+      [SETTINGS.HOME_DURATION_GROUP]: "g3,g4",
+      [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false",
+    });
     expect(filters).toHaveLength(1);
     expect(filters[0]).toContain("5–10 minutes");
     expect(filters[0]).toContain("10–20 minutes");
   });
 
   it("reads the removed 'g1' length choice as any length", () => {
-    expect(activeHomeFilters({ [SETTINGS.HOME_DURATION_GROUP]: "g1" })).toEqual([]);
+    expect(
+      activeHomeFilters({ [SETTINGS.HOME_DURATION_GROUP]: "g1", [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false" }),
+    ).toEqual([]);
+  });
+
+  it("names entertainment (on unless turned off), gaming and the chosen languages", () => {
+    expect(activeHomeFilters({})).toHaveLength(1);
+    const filters = activeHomeFilters({
+      [SETTINGS.HOME_HIDE_MEDIA_CLIPS]: "false",
+      [SETTINGS.HOME_HIDE_GAMING]: "true",
+      [SETTINGS.HOME_LANGUAGES]: "uz,ru",
+    });
+    expect(filters).toHaveLength(2);
+    expect(filters.join(" | ")).toContain("Game videos");
+    expect(filters.join(" | ")).toContain("O'zbekcha, Русский");
   });
 });

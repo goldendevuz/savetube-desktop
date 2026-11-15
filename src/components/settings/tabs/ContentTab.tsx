@@ -4,6 +4,7 @@ import { ToggleSwitch } from '../../ui/ToggleSwitch';
 import { Select } from '../../ui/Select';
 import { Chip } from '../../ui/Chip';
 import { DURATION_GROUP_KEYS, parseDurationGroups, toggleDurationGroup } from '../../../lib/durationGroups';
+import { HOME_LANGUAGE_CODES, parseHomeLanguages, toggleHomeLanguage } from '../../../lib/homeLanguages';
 import { useBoolPref, usePreference, useNumberPref } from '../../../lib/usePreference';
 import { getString } from '../../../lib/i18n/index';
 import { SETTINGS } from '../../../lib/settings/schema';
@@ -27,6 +28,10 @@ export function ContentTab() {
   const [homeFeedScope, setHomeFeedScope] = usePreference(SETTINGS.HOME_FEED_SCOPE, 'off');
   const [pinFreshSubs, setPinFreshSubs] = useBoolPref(SETTINGS.HOME_PIN_FRESH_SUBS, true);
   const [hideMusicVideos, setHideMusicVideos] = useBoolPref(SETTINGS.HOME_HIDE_MUSIC_VIDEOS, false);
+  const [hideMediaClips, setHideMediaClips] = useBoolPref(SETTINGS.HOME_HIDE_MEDIA_CLIPS, true);
+  const [hideGaming, setHideGaming] = useBoolPref(SETTINGS.HOME_HIDE_GAMING, false);
+  const [homeLanguages, setHomeLanguages] = usePreference(SETTINGS.HOME_LANGUAGES, 'any');
+  const chosenLanguages = parseHomeLanguages(homeLanguages);
   const [refreshOnReselect, setRefreshOnReselect] = useBoolPref(SETTINGS.REFRESH_HOME_ON_RESELECT, true);
   const [comments, setComments] = useBoolPref(SETTINGS.COMMENTS_ENABLED, true);
   const [notes, setNotes] = useBoolPref(SETTINGS.NOTES_ENABLED, true);
@@ -111,6 +116,20 @@ export function ContentTab() {
         </SettingItem>
         <SettingItem title={getString('settings_home_pin_fresh_subs')} description={getString('settings_home_pin_fresh_subs_desc')} disabled={homeFeedScope === 'unsubscribed' || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)}><ToggleSwitch checked={pinFreshSubs} onChange={setPinFreshSubs} disabled={homeFeedScope === 'unsubscribed' || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)} /></SettingItem>
         <SettingItem title={getString('settings_home_hide_music_videos')} description={getString('settings_home_hide_music_videos_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MUSIC_VIDEOS)}><ToggleSwitch checked={hideMusicVideos} onChange={setHideMusicVideos} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MUSIC_VIDEOS)} /></SettingItem>
+        <SettingItem title={getString('settings_home_hide_media_clips')} description={getString('settings_home_hide_media_clips_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MEDIA_CLIPS)}><ToggleSwitch checked={hideMediaClips} onChange={setHideMediaClips} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MEDIA_CLIPS)} /></SettingItem>
+        <SettingItem title={getString('settings_home_hide_gaming')} description={getString('settings_home_hide_gaming_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_GAMING)}><ToggleSwitch checked={hideGaming} onChange={setHideGaming} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_GAMING)} /></SettingItem>
+        <SettingItem title={getString('settings_home_languages')} description={getString('settings_home_languages_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_LANGUAGES)}>
+          <div className="flex flex-wrap justify-end gap-2 max-w-md">
+            <Chip active={chosenLanguages.length === 0} onClick={() => setHomeLanguages('any')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_LANGUAGES)}>
+              {getString('settings_home_languages_all')}
+            </Chip>
+            {HOME_LANGUAGE_CODES.map((code) => (
+              <Chip key={code} active={chosenLanguages.includes(code)} onClick={() => setHomeLanguages(toggleHomeLanguage(homeLanguages, code))} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_LANGUAGES)}>
+                {getString(`language_name_${code}` as const)}
+              </Chip>
+            ))}
+          </div>
+        </SettingItem>
         <SettingItem title={getString('settings_home_refresh_on_reselect')} description={getString('settings_home_refresh_on_reselect_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.REFRESH_HOME_ON_RESELECT)}><ToggleSwitch checked={refreshOnReselect} onChange={setRefreshOnReselect} disabled={isSettingDisabledUntilWired(SETTINGS.REFRESH_HOME_ON_RESELECT)} /></SettingItem>
         <SettingItem title={getString('settings_home_max_age')} description={getString('settings_home_max_age_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MAX_VIDEO_AGE)}>
           <Select value={homeMaxVideoAge} onChange={setHomeMaxVideoAge} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MAX_VIDEO_AGE)} options={[

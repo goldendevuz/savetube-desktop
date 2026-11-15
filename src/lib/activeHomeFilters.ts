@@ -1,6 +1,7 @@
 import { getString } from "./i18n/index";
 import { SETTINGS, type SettingKey } from "./settings/schema";
 import { parseDurationGroups } from "./durationGroups";
+import { parseHomeLanguages } from "./homeLanguages";
 
 /** The Home settings that can leave the feed empty, read from the settings values. */
 export type HomeFilterValues = Partial<Record<SettingKey, string | undefined>>;
@@ -38,6 +39,12 @@ export function activeHomeFilters(values: HomeFilterValues): string[] {
   });
   if (lengths.length > 0) filters.push(getString("home_filter_length", lengths.join(", ")));
   if (values[SETTINGS.HOME_HIDE_MUSIC_VIDEOS] === "true") filters.push(getString("home_filter_music"));
+  if (values[SETTINGS.HOME_HIDE_MEDIA_CLIPS] !== "false") filters.push(getString("home_filter_media"));
+  if (values[SETTINGS.HOME_HIDE_GAMING] === "true") filters.push(getString("home_filter_gaming"));
+  const languages = parseHomeLanguages(values[SETTINGS.HOME_LANGUAGES]).map((code) =>
+    getString(`language_name_${code}` as const),
+  );
+  if (languages.length > 0) filters.push(getString("home_filter_languages", languages.join(", ")));
   const scope = values[SETTINGS.HOME_FEED_SCOPE];
   if (scope === "subscribed") filters.push(getString("home_filter_scope_subscribed"));
   if (scope === "unsubscribed") filters.push(getString("home_filter_scope_unsubscribed"));

@@ -110,6 +110,9 @@ const SHARED: &[Shared] = &[
         "home_hide_music_videos",
         Kind::Bool,
     ),
+    shared("home_hide_media_clips", "home_hide_media_clips", Kind::Bool),
+    shared("home_hide_gaming", "home_hide_gaming", Kind::Bool),
+    shared("home_languages", "home_languages", Kind::Text),
     shared("home_pin_fresh_subs", "home_pin_fresh_subs", Kind::Bool),
 ];
 

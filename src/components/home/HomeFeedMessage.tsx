@@ -17,9 +17,9 @@ export function HomeFeedMessage({ title, body, action, details }: HomeFeedMessag
         <p className="mt-1 max-w-sm text-xs text-chrome-zinc-500">{body}</p>
       </div>
       {details && details.items.length > 0 && (
-        <div className="max-w-md text-left text-xs text-chrome-zinc-400">
+        <div className="max-w-md text-start text-xs text-chrome-zinc-400">
           <p className="mb-1 font-semibold text-chrome-zinc-300">{details.title}</p>
-          <ul className="list-disc space-y-0.5 pl-5">
+          <ul className="list-disc space-y-0.5 ps-5">
             {details.items.map((item) => (
               <li key={item}>{item}</li>
             ))}

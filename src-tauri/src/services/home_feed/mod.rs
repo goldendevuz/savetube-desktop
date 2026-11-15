@@ -10,6 +10,7 @@ pub mod card;
 pub(crate) mod channel_memory;
 pub mod chips;
 mod chips_rewatch;
+mod content_rules;
 mod filters;
 pub(crate) mod inputs;
 mod kind_checks;
@@ -92,6 +93,7 @@ struct Feed {
     duration_group: Option<Vec<filters::DurationRange>>,
     min_subscribers: Option<u64>,
     hide_music_videos: bool,
+    content_rules: content_rules::ContentRules,
     subs_backlog: Vec<Card>,
     memory_quota: usize,
     related_picks: HashSet<String>,
@@ -188,6 +190,7 @@ impl HomeFeedService {
         let duration_group = inputs::duration_group(&pool).await;
         let min_subscribers = inputs::min_subscribers(&pool).await;
         let hide_music_videos = inputs::hides_music_videos(&pool).await;
+        let content_rules = inputs::content_rules(&pool).await;
         // Counts already read: a channel known to be too small is left out of the saved feed too.
         let known_subscribers = if min_subscribers.is_some() {
             crate::db::channel_subscribers::fresh(&pool, i64::try_from(now).unwrap_or(i64::MAX))
@@ -242,6 +245,7 @@ impl HomeFeedService {
                         .is_none_or(|subscribers| *subscribers < min)
                 })
                 && !(hide_music_videos && music_video::looks_like_music_video(&card.video))
+                && !content_rules.hides(&card.video)
         };
         let choices_changed = {
             let feed = self.inner.feed.lock().unwrap();
@@ -253,6 +257,7 @@ impl HomeFeedService {
                 || feed.duration_group != duration_group
                 || feed.min_subscribers != min_subscribers
                 || feed.hide_music_videos != hide_music_videos
+                || feed.content_rules != content_rules
         };
         if choices_changed {
             self.inner.chip_results.lock().unwrap().clear();

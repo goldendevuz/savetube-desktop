@@ -9,6 +9,7 @@ import { SETTINGS } from "../lib/settings/schema";
 import { useHomeFeed } from "../lib/useHomeFeed";
 import { useContinueWatching } from "../lib/useContinueWatching";
 import { looksLikeMusicVideo } from "../lib/hideMusicRule";
+import { looksLikeEntertainment, looksLikeGaming } from "../lib/hideContentRules";
 import { useFeedVisibilityFilter } from "../lib/useWatchedFilter";
 import { useGridStyle } from "../lib/useGridColumns";
 import {
@@ -149,12 +150,18 @@ export const Home: React.FC<HomeProps> = ({ onPlay, onAddToQueue }) => {
   const shortsEnabled = useShortsEnabled();
   const homeShorts = useHomeShortsShelf(homeFeedEnabled && homeShortsEnabled && shortsShelvesEnabled && shortsEnabled);
   const hideMusicVideos = useAppSettingsStore((state) => state.values[SETTINGS.HOME_HIDE_MUSIC_VIDEOS] === "true");
+  const hideEntertainment = useAppSettingsStore((state) => state.values[SETTINGS.HOME_HIDE_MEDIA_CLIPS] !== "false");
+  const hideGaming = useAppSettingsStore((state) => state.values[SETTINGS.HOME_HIDE_GAMING] === "true");
   const shelfVideos = useMemo(
     () =>
       continueWatching.videos.filter(
-        (video) => !isHidden(video) && !(hideMusicVideos && looksLikeMusicVideo(video)),
+        (video) =>
+          !isHidden(video) &&
+          !(hideMusicVideos && looksLikeMusicVideo(video)) &&
+          !(hideEntertainment && looksLikeEntertainment(video)) &&
+          !(hideGaming && looksLikeGaming(video)),
       ),
-    [continueWatching.videos, isHidden, hideMusicVideos],
+    [continueWatching.videos, isHidden, hideMusicVideos, hideEntertainment, hideGaming],
   );
   const homeShelves = useMemo(
     () =>

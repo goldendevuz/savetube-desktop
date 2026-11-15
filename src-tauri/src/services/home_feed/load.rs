@@ -194,6 +194,7 @@ impl HomeFeedService {
             feed.duration_group = inputs.exclusions.duration_group();
             feed.min_subscribers = inputs.exclusions.min_subscribers();
             feed.hide_music_videos = inputs.exclusions.hides_music_videos();
+            feed.content_rules = inputs.exclusions.content_rules();
         }
         let ((searches, searches_failed), (related_seeds, related)) = tokio::join!(
             self.search_all(&yt, &wave1, now),

@@ -63,6 +63,7 @@ const TITLE_MARKERS: &[&str] = &[
     "ashula",
     "tarona",
     "konsert",
+    "consert",
     // Turkish: "şarkı", "müzik", "sözleri"
     "şarkı",
     "müzik",
@@ -94,7 +95,7 @@ const TITLE_WORDS: &[&str] = &[
 const CHANNEL_MARKERS: &[&str] = &["vevo", "music", "musiqa", "музык", "müzik"];
 
 /// The lower-case form titles are matched in: the different apostrophes Uzbek is typed with become `'`.
-fn normalized(text: &str) -> String {
+pub(super) fn normalized(text: &str) -> String {
     text.to_lowercase()
         .replace(['ʻ', 'ʼ', '’', '‘', '`', '´'], "'")
 }
