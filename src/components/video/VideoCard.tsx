@@ -440,6 +440,12 @@ function VideoCardComponent({
 
   const feedActionFailed = () => showToast({ variant: "error", message: getString("feed_action_failed") });
 
+  const handleQuickNotInterested = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    notInterested(video).catch(feedActionFailed);
+  };
+
   const handlePlayNext = () => {
     const result = usePlayerStore.getState().playVideoNext(video);
     showToast(
@@ -956,6 +962,22 @@ function VideoCardComponent({
               </button>
             ) : null}
           </>
+        ) : null}
+
+        {!isHistoryCard && !isContinueCard && !isLocalFile ? (
+          // One click, same spot on every card: the same "Not interested" as the menu, for going through a
+          // feed quickly. Only shows while the pointer is over the card, so it stays out of the way.
+          <button
+            type="button"
+            onClick={handleQuickNotInterested}
+            onMouseDown={(e) => e.stopPropagation()}
+            onAuxClick={(e) => e.stopPropagation()}
+            title={getString("menu_not_interested")}
+            aria-label={getString("menu_not_interested")}
+            className="absolute end-2 top-2 z-30 flex h-7 w-7 items-center justify-center rounded-full border border-chrome-white/15 bg-chrome-black/70 text-chrome-white/80 opacity-0 transition-colors duration-150 ease-out hover:bg-chrome-red-950/60 hover:text-chrome-red-300 focus-visible:opacity-100 group-hover:opacity-100"
+          >
+            <Ban size={14} />
+          </button>
         ) : null}
 
         <div className="pointer-events-none absolute inset-0 bg-chrome-black/0 group-hover:bg-chrome-black/10 transition-colors duration-200" />
