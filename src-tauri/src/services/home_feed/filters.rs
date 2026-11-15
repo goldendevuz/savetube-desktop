@@ -234,6 +234,26 @@ pub fn duration_range(key: &str) -> Option<DurationRange> {
         .map(|&(_, from, to)| (from, to))
 }
 
+/// The length ranges of a saved choice: group keys joined by commas ("g2,g4,g5"), or "any". Unknown keys
+/// are skipped; `None` when no key is a group.
+#[must_use]
+pub fn duration_ranges(setting: &str) -> Option<Vec<DurationRange>> {
+    let ranges: Vec<DurationRange> = setting.split(',').filter_map(duration_range).collect();
+    (!ranges.is_empty()).then_some(ranges)
+}
+
+/// A video whose length is outside every group the viewer chose.
+#[must_use]
+pub fn is_outside_duration_ranges(
+    video: &crate::models::video::VideoSummary,
+    ranges: &[DurationRange],
+) -> bool {
+    !ranges.is_empty()
+        && ranges
+            .iter()
+            .all(|range| is_outside_duration_range(video, *range))
+}
+
 /// A video whose length is outside the group the viewer chose. Live streams, upcoming videos and
 /// videos with no readable length are never ruled out: they have no length, or it is not known.
 #[must_use]
@@ -277,6 +297,23 @@ mod duration_range_tests {
         assert!(!outside("g6", 3_599) && outside("g6", 3_600));
         assert!(!outside("g7", 7_199) && outside("g7", 7_200));
         assert!(outside("g8", 7_199) && !outside("g8", 7_200) && !outside("g8", 36_000));
+    }
+
+    #[test]
+    fn several_groups_keep_a_video_that_fits_any_of_them() {
+        let ranges = super::duration_ranges("g2,g4").unwrap();
+        let outside = |seconds| super::is_outside_duration_ranges(&video(Some(seconds)), &ranges);
+        assert!(!outside(120) && !outside(900));
+        assert!(outside(400) && outside(5_000));
+        assert!(!super::is_outside_duration_ranges(&video(Some(400)), &[]));
+    }
+
+    #[test]
+    fn a_saved_list_skips_unknown_keys_and_any() {
+        assert!(super::duration_ranges("any").is_none());
+        assert!(super::duration_ranges("").is_none());
+        assert_eq!(super::duration_ranges("g3").unwrap().len(), 1);
+        assert_eq!(super::duration_ranges("g3, g9 ,G5").unwrap().len(), 2);
     }
 
     #[test]

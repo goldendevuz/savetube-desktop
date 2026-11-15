@@ -29,6 +29,13 @@ describe("activeHomeFilters", () => {
     expect(filters.join(" | ")).toContain("10–20 minutes");
   });
 
+  it("names every chosen length range", () => {
+    const filters = activeHomeFilters({ [SETTINGS.HOME_DURATION_GROUP]: "g3,g4" });
+    expect(filters).toHaveLength(1);
+    expect(filters[0]).toContain("5–10 minutes");
+    expect(filters[0]).toContain("10–20 minutes");
+  });
+
   it("reads the removed 'g1' length choice as any length", () => {
     expect(activeHomeFilters({ [SETTINGS.HOME_DURATION_GROUP]: "g1" })).toEqual([]);
   });

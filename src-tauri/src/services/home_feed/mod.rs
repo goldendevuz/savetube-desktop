@@ -89,7 +89,7 @@ struct Feed {
     feed_scope: inputs::FeedScope,
     /// The minimum views, minimum subscribers and music choice this feed was built under.
     min_views: Option<u64>,
-    duration_group: Option<filters::DurationRange>,
+    duration_group: Option<Vec<filters::DurationRange>>,
     min_subscribers: Option<u64>,
     hide_music_videos: bool,
     subs_backlog: Vec<Card>,
@@ -234,7 +234,8 @@ impl HomeFeedService {
                     .is_none_or(|ids| ids.contains(card.channel_id()))
                 && !min_views.is_some_and(|min| filters::is_below_min_views(&card.video, min))
                 && !duration_group
-                    .is_some_and(|group| filters::is_outside_duration_range(&card.video, group))
+                    .as_deref()
+                    .is_some_and(|groups| filters::is_outside_duration_ranges(&card.video, groups))
                 && !min_subscribers.is_some_and(|min| {
                     known_subscribers
                         .get(card.channel_id())

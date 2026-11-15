@@ -742,7 +742,8 @@ export const SETTING_DEFINITIONS = [
   bool(SETTINGS.REFRESH_HOME_ON_RESELECT, "content", true, "wired"),
   str(SETTINGS.HOME_MAX_VIDEO_AGE, "content", "0", "wired", ["0", "24", "72", "168", "720", "4320", "8760"]),
   str(SETTINGS.HOME_MIN_VIEWS, "content", "0", "wired", ["0", "10", "100", "1000", "10000", "100000", "1000000", "10000000", "100000000"]),
-  str(SETTINGS.HOME_DURATION_GROUP, "content", "any", "wired", ["any", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8"]),
+  // One or several groups joined by commas ("g2,g4"), or "any": not a fixed list of values.
+  str(SETTINGS.HOME_DURATION_GROUP, "content", "any", "wired"),
   str(SETTINGS.HOME_MIN_SUBSCRIBERS, "content", "0", "wired", ["0", "1000", "10000", "100000", "1000000", "10000000", "100000000", "1000000000"]),
   bool(SETTINGS.COMMENTS_ENABLED, "content", true, "wired"),
   bool(SETTINGS.NOTES_ENABLED, "content", true, "wired"),

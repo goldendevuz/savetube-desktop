@@ -1,5 +1,6 @@
 import { getString } from "./i18n/index";
 import { SETTINGS, type SettingKey } from "./settings/schema";
+import { parseDurationGroups } from "./durationGroups";
 
 /** The Home settings that can leave the feed empty, read from the settings values. */
 export type HomeFilterValues = Partial<Record<SettingKey, string | undefined>>;
@@ -31,8 +32,11 @@ export function activeHomeFilters(values: HomeFilterValues): string[] {
   if (views > 0) filters.push(getString("home_filter_min_views", views.toLocaleString("en-US")));
   const subscribers = count(values[SETTINGS.HOME_MIN_SUBSCRIBERS]);
   if (subscribers > 0) filters.push(getString("home_filter_min_subscribers", subscribers.toLocaleString("en-US")));
-  const lengthKey = LENGTH_LABELS[(values[SETTINGS.HOME_DURATION_GROUP] ?? "any").toLowerCase()];
-  if (lengthKey) filters.push(getString("home_filter_length", getString(lengthKey)));
+  const lengths = parseDurationGroups(values[SETTINGS.HOME_DURATION_GROUP]).flatMap((key) => {
+    const label = LENGTH_LABELS[key];
+    return label ? [getString(label)] : [];
+  });
+  if (lengths.length > 0) filters.push(getString("home_filter_length", lengths.join(", ")));
   if (values[SETTINGS.HOME_HIDE_MUSIC_VIDEOS] === "true") filters.push(getString("home_filter_music"));
   const scope = values[SETTINGS.HOME_FEED_SCOPE];
   if (scope === "subscribed") filters.push(getString("home_filter_scope_subscribed"));

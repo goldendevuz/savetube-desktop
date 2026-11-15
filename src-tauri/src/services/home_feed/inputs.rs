@@ -9,7 +9,7 @@ use sqlx::SqlitePool;
 use super::card::Card;
 use super::channel_memory::Watch;
 use super::filters::{
-    DurationRange, duration_range, is_below_min_views, is_outside_duration_range, is_within,
+    DurationRange, duration_ranges, is_below_min_views, is_outside_duration_ranges, is_within,
 };
 use super::music_video::looks_like_music_video;
 use super::seeds::{SeedInput, SeedSource};
@@ -116,18 +116,20 @@ pub async fn min_views(pool: &SqlitePool) -> Option<u64> {
     (views > 0).then_some(views)
 }
 
-/// The video length group Home is limited to, by the viewer's choice; `None` when off.
-pub async fn duration_group(pool: &SqlitePool) -> Option<DurationRange> {
-    let key = get_setting(pool, DURATION_GROUP_SETTING)
+/// The video length groups Home is limited to, by the viewer's choice (one or several, joined by
+/// commas); `None` when off.
+pub async fn duration_group(pool: &SqlitePool) -> Option<Vec<DurationRange>> {
+    let setting = get_setting(pool, DURATION_GROUP_SETTING)
         .await
         .ok()
         .flatten()?;
     // "Up to 1 minute" is no longer offered (Home holds no Shorts, so it left the page empty); a choice
     // saved before is read as any length.
-    if key.trim().eq_ignore_ascii_case("g1") {
-        return None;
-    }
-    duration_range(&key)
+    let kept: Vec<&str> = setting
+        .split(',')
+        .filter(|key| !key.trim().eq_ignore_ascii_case("g1"))
+        .collect();
+    duration_ranges(&kept.join(","))
 }
 
 /// The fewest subscribers a channel may have to show on Home, by the viewer's choice; `None` when off.
@@ -238,7 +240,7 @@ pub struct Exclusions {
     /// The fewest views a video may have, when the viewer set a minimum.
     min_views: Option<u64>,
     /// The video length group Home is limited to, when the viewer chose one.
-    duration_group: Option<DurationRange>,
+    duration_group: Option<Vec<DurationRange>>,
     /// The channels Home is limited to (the followed ones) when the viewer chose "only my subscriptions".
     only_channels: Option<HashSet<String>>,
     /// The fewest subscribers a channel may have, when the viewer set a minimum, and the counts
@@ -272,8 +274,8 @@ impl Exclusions {
 
     /// The video length group Home is limited to, when the viewer chose one.
     #[must_use]
-    pub fn duration_group(&self) -> Option<DurationRange> {
-        self.duration_group
+    pub fn duration_group(&self) -> Option<Vec<DurationRange>> {
+        self.duration_group.clone()
     }
 
     /// Whether Home draws only from the channels the viewer follows.
@@ -306,7 +308,8 @@ impl Exclusions {
                 .is_some_and(|min| is_below_min_views(&card.video, min))
             || self
                 .duration_group
-                .is_some_and(|group| is_outside_duration_range(&card.video, group))
+                .as_deref()
+                .is_some_and(|groups| is_outside_duration_ranges(&card.video, groups))
             || self
                 .only_channels
                 .as_ref()

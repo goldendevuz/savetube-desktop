@@ -2,6 +2,8 @@ import { SettingsGroup } from '../SettingsGroup';
 import { SettingItem } from '../SettingItem';
 import { ToggleSwitch } from '../../ui/ToggleSwitch';
 import { Select } from '../../ui/Select';
+import { Chip } from '../../ui/Chip';
+import { DURATION_GROUP_KEYS, parseDurationGroups, toggleDurationGroup } from '../../../lib/durationGroups';
 import { useBoolPref, usePreference, useNumberPref } from '../../../lib/usePreference';
 import { getString } from '../../../lib/i18n/index';
 import { SETTINGS } from '../../../lib/settings/schema';
@@ -54,6 +56,7 @@ export function ContentTab() {
   const [homeMaxVideoAge, setHomeMaxVideoAge] = usePreference(SETTINGS.HOME_MAX_VIDEO_AGE, '0');
   const [homeMinViews, setHomeMinViews] = usePreference(SETTINGS.HOME_MIN_VIEWS, '0');
   const [homeDurationGroup, setHomeDurationGroup] = usePreference(SETTINGS.HOME_DURATION_GROUP, 'any');
+  const chosenDurationGroups = parseDurationGroups(homeDurationGroup);
   const [homeMinSubscribers, setHomeMinSubscribers] = usePreference(SETTINGS.HOME_MIN_SUBSCRIBERS, '0');
 
   return (
@@ -134,16 +137,16 @@ export function ContentTab() {
           ]} />
         </SettingItem>
         <SettingItem title={getString('settings_home_duration_group')} description={getString('settings_home_duration_group_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)}>
-          <Select value={homeDurationGroup === 'g1' ? 'any' : homeDurationGroup} onChange={setHomeDurationGroup} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)} options={[
-            { value: 'any', label: getString('settings_home_duration_any') },
-            { value: 'g2', label: getString('settings_home_duration_g2') },
-            { value: 'g3', label: getString('settings_home_duration_g3') },
-            { value: 'g4', label: getString('settings_home_duration_g4') },
-            { value: 'g5', label: getString('settings_home_duration_g5') },
-            { value: 'g6', label: getString('settings_home_duration_g6') },
-            { value: 'g7', label: getString('settings_home_duration_g7') },
-            { value: 'g8', label: getString('settings_home_duration_g8') },
-          ]} />
+          <div className="flex flex-wrap justify-end gap-2 max-w-md">
+            <Chip active={chosenDurationGroups.length === 0} onClick={() => setHomeDurationGroup('any')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)}>
+              {getString('settings_home_duration_any')}
+            </Chip>
+            {DURATION_GROUP_KEYS.map((key) => (
+              <Chip key={key} active={chosenDurationGroups.includes(key)} onClick={() => setHomeDurationGroup(toggleDurationGroup(homeDurationGroup, key))} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)}>
+                {getString(`settings_home_duration_${key}` as const)}
+              </Chip>
+            ))}
+          </div>
         </SettingItem>
         <SettingItem title={getString('settings_home_min_subscribers')} description={getString('settings_home_min_subscribers_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MIN_SUBSCRIBERS)}>
           <Select value={homeMinSubscribers} onChange={setHomeMinSubscribers} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MIN_SUBSCRIBERS)} options={[
