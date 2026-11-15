@@ -13,7 +13,7 @@ use super::filters::{
 };
 use super::music_video::looks_like_music_video;
 use super::seeds::{SeedInput, SeedSource};
-use crate::db::settings::get_setting;
+use crate::db::settings::{get_setting, set_setting};
 use crate::db::watch_history::{WatchHistoryRecord, get_watch_history};
 use crate::db::{known_shorts, library, seen_videos, unplayable_videos};
 use crate::errors::AppResult;
@@ -44,13 +44,64 @@ const PIN_FRESH_SUBS_SETTING: &str = "home_pin_fresh_subs";
 /// Settings → Content, "Hide music videos".
 const HIDE_MUSIC_VIDEOS_SETTING: &str = "home_hide_music_videos";
 
-/// Whether channels the viewer follows may appear on Home; on unless they turned it off.
-pub async fn subscriptions_on_home(pool: &SqlitePool) -> bool {
-    get_setting(pool, SUBSCRIPTIONS_ON_HOME_SETTING)
+/// Settings → Content, "Where Home draws from"; "off" or unset is everything, otherwise "subscribed"
+/// or "unsubscribed". It replaces the older "Subscriptions on Home" switch, which is still read when
+/// this one was never set.
+const FEED_SCOPE_SETTING: &str = "home_feed_scope";
+
+/// Which channels Home draws from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FeedScope {
+    /// Subscriptions and other channels together (the default).
+    #[default]
+    All,
+    /// Only the channels the viewer follows: familiar content.
+    Subscribed,
+    /// Only channels the viewer does not follow: new content.
+    Unsubscribed,
+}
+
+impl FeedScope {
+    /// The scope a stored choice names; `None` for anything unknown.
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "off" | "all" | "" => Some(Self::All),
+            "subscribed" => Some(Self::Subscribed),
+            "unsubscribed" => Some(Self::Unsubscribed),
+            _ => None,
+        }
+    }
+}
+
+/// The viewer's choice of where Home draws from.
+pub async fn feed_scope(pool: &SqlitePool) -> FeedScope {
+    if let Some(scope) = get_setting(pool, FEED_SCOPE_SETTING)
         .await
         .ok()
         .flatten()
-        .is_none_or(|value| value != "false")
+        .and_then(|value| FeedScope::parse(&value))
+    {
+        return scope;
+    }
+    let old_switch_off = get_setting(pool, SUBSCRIPTIONS_ON_HOME_SETTING)
+        .await
+        .ok()
+        .flatten()
+        .is_some_and(|value| value == "false");
+    if old_switch_off {
+        // The older switch was off: carry it over once, so the new choice shows what Home does.
+        let _ = set_setting(pool, FEED_SCOPE_SETTING, "unsubscribed").await;
+        FeedScope::Unsubscribed
+    } else {
+        FeedScope::All
+    }
+}
+
+/// Whether channels the viewer follows may appear on Home: everywhere except in the
+/// "not subscribed" scope.
+pub async fn subscriptions_on_home(pool: &SqlitePool) -> bool {
+    feed_scope(pool).await != FeedScope::Unsubscribed
 }
 
 /// The fewest views a video may have to show on Home, by the viewer's choice; `None` when off.
@@ -183,6 +234,8 @@ pub struct Exclusions {
     min_views: Option<u64>,
     /// The video length group Home is limited to, when the viewer chose one.
     duration_group: Option<DurationRange>,
+    /// The channels Home is limited to (the followed ones) when the viewer chose "only my subscriptions".
+    only_channels: Option<HashSet<String>>,
     /// The fewest subscribers a channel may have, when the viewer set a minimum, and the counts
     /// read so far. A channel whose count is not known yet is never ruled out.
     min_subscribers: Option<u64>,
@@ -218,6 +271,12 @@ impl Exclusions {
         self.duration_group
     }
 
+    /// Whether Home draws only from the channels the viewer follows.
+    #[must_use]
+    pub fn subscribed_only(&self) -> bool {
+        self.only_channels.is_some()
+    }
+
     /// Whether music videos are kept off Home.
     pub fn hides_music_videos(&self) -> bool {
         self.hide_music_videos
@@ -243,6 +302,10 @@ impl Exclusions {
             || self
                 .duration_group
                 .is_some_and(|group| is_outside_duration_range(&card.video, group))
+            || self
+                .only_channels
+                .as_ref()
+                .is_some_and(|ids| !ids.contains(card.channel_id()))
             || self
                 .age_limit
                 .is_some_and(|(max_age_ms, now_ms)| !is_within(card, now_ms, max_age_ms))
@@ -280,6 +343,8 @@ pub struct Inputs {
     pub max_video_age_ms: Option<u64>,
     pub hides_seen_videos: bool,
     pub subscriptions_on_home: bool,
+    /// Where Home draws from, by the viewer's choice.
+    pub feed_scope: FeedScope,
     pub pin_fresh_subs: bool,
 }
 
@@ -326,7 +391,8 @@ impl Inputs {
         let spec = brain.key_spec();
         let max_video_age_ms = max_video_age_ms(pool).await;
         let hides_seen_videos = hides_seen_videos(pool).await;
-        let subscriptions_on_home = subscriptions_on_home(pool).await;
+        let feed_scope = feed_scope(pool).await;
+        let subscriptions_on_home = feed_scope != FeedScope::Unsubscribed;
         let pin_fresh_subs = pins_fresh_subs(pool).await;
         let hide_music_videos = hides_music_videos(pool).await;
         let min_views = min_views(pool).await;
@@ -357,6 +423,7 @@ impl Inputs {
                 hide_music_videos,
                 min_views,
                 duration_group,
+                only_channels: (feed_scope == FeedScope::Subscribed).then(|| subscriptions.ids()),
                 min_subscribers,
                 channel_subscribers,
                 matchers: BlockedMatchers::new(&brain.blocked_topics, &spec),
@@ -370,6 +437,7 @@ impl Inputs {
             max_video_age_ms,
             hides_seen_videos,
             subscriptions_on_home,
+            feed_scope,
             pin_fresh_subs,
         })
     }
@@ -643,5 +711,22 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(hides(&on), [true, false]);
+    }
+}
+
+#[cfg(test)]
+mod feed_scope_tests {
+    use super::FeedScope;
+
+    #[test]
+    fn a_stored_choice_names_its_scope() {
+        assert_eq!(FeedScope::parse("off"), Some(FeedScope::All));
+        assert_eq!(FeedScope::parse("subscribed"), Some(FeedScope::Subscribed));
+        assert_eq!(
+            FeedScope::parse(" Unsubscribed "),
+            Some(FeedScope::Unsubscribed)
+        );
+        assert_eq!(FeedScope::parse("somewhere else"), None);
+        assert_eq!(FeedScope::default(), FeedScope::All);
     }
 }

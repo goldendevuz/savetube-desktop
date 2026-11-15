@@ -85,6 +85,8 @@ struct Feed {
     hides_seen: bool,
     /// Whether this feed was built keeping followed channels off Home.
     subscriptions_kept_off: bool,
+    /// Where Home drew from when this feed was built.
+    feed_scope: inputs::FeedScope,
     /// The minimum views, minimum subscribers and music choice this feed was built under.
     min_views: Option<u64>,
     duration_group: Option<filters::DurationRange>,
@@ -180,7 +182,8 @@ impl HomeFeedService {
         let pool = app.state::<sqlx::SqlitePool>();
         let max_video_age_ms = inputs::max_video_age_ms(&pool).await;
         let hides_seen = inputs::hides_seen_videos(&pool).await;
-        let subscriptions_kept_off = !inputs::subscriptions_on_home(&pool).await;
+        let feed_scope = inputs::feed_scope(&pool).await;
+        let subscriptions_kept_off = feed_scope == inputs::FeedScope::Unsubscribed;
         let min_views = inputs::min_views(&pool).await;
         let duration_group = inputs::duration_group(&pool).await;
         let min_subscribers = inputs::min_subscribers(&pool).await;
@@ -201,6 +204,17 @@ impl HomeFeedService {
         } else {
             HashSet::new()
         };
+        // "Only my subscriptions": a card from any other channel is left out of the saved feed too.
+        let only_followed = if feed_scope == inputs::FeedScope::Subscribed {
+            Some(
+                inputs::subscriptions(&pool)
+                    .await
+                    .map(|subscriptions| subscriptions.ids())
+                    .unwrap_or_default(),
+            )
+        } else {
+            None
+        };
         let shorts = crate::db::known_shorts::all(&pool)
             .await
             .unwrap_or_default();
@@ -215,6 +229,9 @@ impl HomeFeedService {
                 && !shorts.contains(card.id())
                 && !unplayable.contains(card.id())
                 && !kept_off_home.contains(card.channel_id())
+                && only_followed
+                    .as_ref()
+                    .is_none_or(|ids| ids.contains(card.channel_id()))
                 && !min_views.is_some_and(|min| filters::is_below_min_views(&card.video, min))
                 && !duration_group
                     .is_some_and(|group| filters::is_outside_duration_range(&card.video, group))
@@ -230,6 +247,7 @@ impl HomeFeedService {
             feed.max_video_age_ms != max_video_age_ms
                 || feed.hides_seen != hides_seen
                 || feed.subscriptions_kept_off != subscriptions_kept_off
+                || feed.feed_scope != feed_scope
                 || feed.min_views != min_views
                 || feed.duration_group != duration_group
                 || feed.min_subscribers != min_subscribers

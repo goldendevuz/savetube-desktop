@@ -40,9 +40,21 @@ pub fn quotas(
     sub_count: usize,
     total_interactions: i32,
     has_neighbours: bool,
+    subscribed_only: bool,
 ) -> HashMap<FeedSource, usize> {
     if remaining == 0 {
         return FeedSource::ALL.iter().map(|s| (*s, 0)).collect();
+    }
+    if subscribed_only {
+        // "Only my subscriptions": the page comes from the followed channels. The other lanes
+        // only fill what the subscriptions cannot, and they hold followed channels alone.
+        return HashMap::from([
+            (FeedSource::Subs, remaining),
+            (FeedSource::Related, 0),
+            (FeedSource::Discovery, 0),
+            (FeedSource::ChannelMemory, 0),
+            (FeedSource::Neighbours, 0),
+        ]);
     }
     let slots = remaining as f64;
     let share = |fraction: f64| (slots * fraction) as usize;
@@ -231,14 +243,22 @@ mod tests {
 
     #[test]
     fn quotas_follow_the_viewer() {
-        let cold = quotas(40, 0, 10, false);
+        let cold = quotas(40, 0, 10, false, false);
         assert_eq!(cold[&FeedSource::Subs], 0);
         assert_eq!(cold[&FeedSource::Discovery], 18);
-        let mature = quotas(38, 30, 200, true);
+        let mature = quotas(38, 30, 200, true, false);
         assert_eq!(mature[&FeedSource::Subs], 15);
         assert_eq!(mature[&FeedSource::Related], 9);
         assert_eq!(mature[&FeedSource::Discovery], 9);
         assert_eq!(mature.values().sum::<usize>(), 38);
+    }
+
+    #[test]
+    fn only_my_subscriptions_gives_the_whole_page_to_the_subscriptions_lane() {
+        let only = quotas(38, 30, 200, true, true);
+        assert_eq!(only[&FeedSource::Subs], 38);
+        assert_eq!(only.values().sum::<usize>(), 38);
+        assert_eq!(only[&FeedSource::Discovery], 0);
     }
 
     #[test]

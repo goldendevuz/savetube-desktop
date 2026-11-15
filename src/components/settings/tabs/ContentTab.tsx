@@ -22,7 +22,7 @@ export function ContentTab() {
   const [shortsShelf, setShortsShelf] = useBoolPref(SETTINGS.SHORTS_SHELF_ENABLED, true);
   const [homeShortsShelf, setHomeShortsShelf] = useBoolPref(SETTINGS.HOME_SHORTS_SHELF_ENABLED, true);
   const [continueWatching, setContinueWatching] = useBoolPref(SETTINGS.CONTINUE_WATCHING_ENABLED, true);
-  const [homeSubscriptions, setHomeSubscriptions] = useBoolPref(SETTINGS.HOME_SUBSCRIPTIONS_ENABLED, true);
+  const [homeFeedScope, setHomeFeedScope] = usePreference(SETTINGS.HOME_FEED_SCOPE, 'off');
   const [pinFreshSubs, setPinFreshSubs] = useBoolPref(SETTINGS.HOME_PIN_FRESH_SUBS, true);
   const [hideMusicVideos, setHideMusicVideos] = useBoolPref(SETTINGS.HOME_HIDE_MUSIC_VIDEOS, false);
   const [refreshOnReselect, setRefreshOnReselect] = useBoolPref(SETTINGS.REFRESH_HOME_ON_RESELECT, true);
@@ -99,8 +99,14 @@ export function ContentTab() {
         <SettingItem title={getString('settings_shorts_shelf')} description={getString('settings_shorts_shelf_desc')} disabled={!shortsContent || isSettingDisabledUntilWired(SETTINGS.SHORTS_SHELF_ENABLED)}><ToggleSwitch checked={shortsShelf} onChange={setShortsShelf} disabled={!shortsContent || isSettingDisabledUntilWired(SETTINGS.SHORTS_SHELF_ENABLED)} /></SettingItem>
         <SettingItem title={getString('settings_home_shorts_shelf')} description={getString('settings_home_shorts_shelf_desc')} disabled={!shortsContent || isSettingDisabledUntilWired(SETTINGS.HOME_SHORTS_SHELF_ENABLED)}><ToggleSwitch checked={homeShortsShelf} onChange={setHomeShortsShelf} disabled={!shortsContent || isSettingDisabledUntilWired(SETTINGS.HOME_SHORTS_SHELF_ENABLED)} /></SettingItem>
         <SettingItem title={getString('settings_continue_watching')} description={getString('settings_continue_watching_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.CONTINUE_WATCHING_ENABLED)}><ToggleSwitch checked={continueWatching} onChange={setContinueWatching} disabled={isSettingDisabledUntilWired(SETTINGS.CONTINUE_WATCHING_ENABLED)} /></SettingItem>
-        <SettingItem title={getString('settings_home_subscriptions')} description={getString('settings_home_subscriptions_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_SUBSCRIPTIONS_ENABLED)}><ToggleSwitch checked={homeSubscriptions} onChange={setHomeSubscriptions} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_SUBSCRIPTIONS_ENABLED)} /></SettingItem>
-        <SettingItem title={getString('settings_home_pin_fresh_subs')} description={getString('settings_home_pin_fresh_subs_desc')} disabled={!homeSubscriptions || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)}><ToggleSwitch checked={pinFreshSubs} onChange={setPinFreshSubs} disabled={!homeSubscriptions || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)} /></SettingItem>
+        <SettingItem title={getString('settings_home_feed_scope')} description={getString('settings_home_feed_scope_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_FEED_SCOPE)}>
+          <Select value={homeFeedScope} onChange={setHomeFeedScope} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_FEED_SCOPE)} options={[
+            { value: 'off', label: getString('settings_home_feed_scope_off') },
+            { value: 'subscribed', label: getString('settings_home_feed_scope_subscribed') },
+            { value: 'unsubscribed', label: getString('settings_home_feed_scope_unsubscribed') },
+          ]} />
+        </SettingItem>
+        <SettingItem title={getString('settings_home_pin_fresh_subs')} description={getString('settings_home_pin_fresh_subs_desc')} disabled={homeFeedScope === 'unsubscribed' || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)}><ToggleSwitch checked={pinFreshSubs} onChange={setPinFreshSubs} disabled={homeFeedScope === 'unsubscribed' || isSettingDisabledUntilWired(SETTINGS.HOME_PIN_FRESH_SUBS)} /></SettingItem>
         <SettingItem title={getString('settings_home_hide_music_videos')} description={getString('settings_home_hide_music_videos_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MUSIC_VIDEOS)}><ToggleSwitch checked={hideMusicVideos} onChange={setHideMusicVideos} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_HIDE_MUSIC_VIDEOS)} /></SettingItem>
         <SettingItem title={getString('settings_home_refresh_on_reselect')} description={getString('settings_home_refresh_on_reselect_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.REFRESH_HOME_ON_RESELECT)}><ToggleSwitch checked={refreshOnReselect} onChange={setRefreshOnReselect} disabled={isSettingDisabledUntilWired(SETTINGS.REFRESH_HOME_ON_RESELECT)} /></SettingItem>
         <SettingItem title={getString('settings_home_max_age')} description={getString('settings_home_max_age_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MAX_VIDEO_AGE)}>
