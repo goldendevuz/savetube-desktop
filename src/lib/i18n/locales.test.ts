@@ -13,8 +13,8 @@ const placeholders = (text: string) =>
 describe("translations", () => {
   const base = strings as Record<string, string>;
 
-  it("covers the languages Flow for Android ships", () => {
-    expect(Object.keys(locales).length).toBe(33);
+  it("covers the languages SaveTube for Android ships", () => {
+    expect(Object.keys(locales).length).toBe(34);
   });
 
   it.each(Object.entries(locales))("%s only has known keys and keeps each string's placeholders", (_, table) => {
