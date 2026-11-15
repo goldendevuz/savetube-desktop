@@ -87,6 +87,7 @@ struct Feed {
     subscriptions_kept_off: bool,
     /// The minimum views, minimum subscribers and music choice this feed was built under.
     min_views: Option<u64>,
+    duration_group: Option<filters::DurationRange>,
     min_subscribers: Option<u64>,
     hide_music_videos: bool,
     subs_backlog: Vec<Card>,
@@ -181,6 +182,7 @@ impl HomeFeedService {
         let hides_seen = inputs::hides_seen_videos(&pool).await;
         let subscriptions_kept_off = !inputs::subscriptions_on_home(&pool).await;
         let min_views = inputs::min_views(&pool).await;
+        let duration_group = inputs::duration_group(&pool).await;
         let min_subscribers = inputs::min_subscribers(&pool).await;
         let hide_music_videos = inputs::hides_music_videos(&pool).await;
         // Counts already read: a channel known to be too small is left out of the saved feed too.
@@ -214,6 +216,8 @@ impl HomeFeedService {
                 && !unplayable.contains(card.id())
                 && !kept_off_home.contains(card.channel_id())
                 && !min_views.is_some_and(|min| filters::is_below_min_views(&card.video, min))
+                && !duration_group
+                    .is_some_and(|group| filters::is_outside_duration_range(&card.video, group))
                 && !min_subscribers.is_some_and(|min| {
                     known_subscribers
                         .get(card.channel_id())
@@ -227,6 +231,7 @@ impl HomeFeedService {
                 || feed.hides_seen != hides_seen
                 || feed.subscriptions_kept_off != subscriptions_kept_off
                 || feed.min_views != min_views
+                || feed.duration_group != duration_group
                 || feed.min_subscribers != min_subscribers
                 || feed.hide_music_videos != hide_music_videos
         };

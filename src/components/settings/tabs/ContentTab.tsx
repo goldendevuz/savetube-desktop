@@ -53,6 +53,7 @@ export function ContentTab() {
   const [categoriesTab, setCategoriesTab] = useBoolPref(SETTINGS.CATEGORIES_NAV_TAB_ENABLED, false);
   const [homeMaxVideoAge, setHomeMaxVideoAge] = usePreference(SETTINGS.HOME_MAX_VIDEO_AGE, '0');
   const [homeMinViews, setHomeMinViews] = usePreference(SETTINGS.HOME_MIN_VIEWS, '0');
+  const [homeDurationGroup, setHomeDurationGroup] = usePreference(SETTINGS.HOME_DURATION_GROUP, 'any');
   const [homeMinSubscribers, setHomeMinSubscribers] = usePreference(SETTINGS.HOME_MIN_SUBSCRIBERS, '0');
 
   return (
@@ -124,6 +125,19 @@ export function ContentTab() {
             { value: '1000000', label: getString('settings_home_min_views_1m') },
             { value: '10000000', label: getString('settings_home_min_views_10m') },
             { value: '100000000', label: getString('settings_home_min_views_100m') },
+          ]} />
+        </SettingItem>
+        <SettingItem title={getString('settings_home_duration_group')} description={getString('settings_home_duration_group_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)}>
+          <Select value={homeDurationGroup} onChange={setHomeDurationGroup} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_DURATION_GROUP)} options={[
+            { value: 'any', label: getString('settings_home_duration_any') },
+            { value: 'g1', label: getString('settings_home_duration_g1') },
+            { value: 'g2', label: getString('settings_home_duration_g2') },
+            { value: 'g3', label: getString('settings_home_duration_g3') },
+            { value: 'g4', label: getString('settings_home_duration_g4') },
+            { value: 'g5', label: getString('settings_home_duration_g5') },
+            { value: 'g6', label: getString('settings_home_duration_g6') },
+            { value: 'g7', label: getString('settings_home_duration_g7') },
+            { value: 'g8', label: getString('settings_home_duration_g8') },
           ]} />
         </SettingItem>
         <SettingItem title={getString('settings_home_min_subscribers')} description={getString('settings_home_min_subscribers_desc')} disabled={isSettingDisabledUntilWired(SETTINGS.HOME_MIN_SUBSCRIBERS)}>

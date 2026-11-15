@@ -8,7 +8,9 @@ use sqlx::SqlitePool;
 
 use super::card::Card;
 use super::channel_memory::Watch;
-use super::filters::{is_below_min_views, is_within};
+use super::filters::{
+    DurationRange, duration_range, is_below_min_views, is_outside_duration_range, is_within,
+};
 use super::music_video::looks_like_music_video;
 use super::seeds::{SeedInput, SeedSource};
 use crate::db::settings::get_setting;
@@ -35,6 +37,8 @@ const SUBSCRIPTIONS_ON_HOME_SETTING: &str = "home_subscriptions_enabled";
 const MIN_VIEWS_SETTING: &str = "home_min_views";
 /// Settings → Content, "Hide channels with fewer subscribers than"; 0 or unset is off.
 const MIN_SUBSCRIBERS_SETTING: &str = "home_min_subscribers";
+/// Settings → Content, "Show only videos of this length"; "any" or unset is off, otherwise g1 to g8.
+const DURATION_GROUP_SETTING: &str = "home_duration_group";
 /// Settings → Content, "Pin fresh uploads from subscriptions".
 const PIN_FRESH_SUBS_SETTING: &str = "home_pin_fresh_subs";
 /// Settings → Content, "Hide music videos".
@@ -59,6 +63,15 @@ pub async fn min_views(pool: &SqlitePool) -> Option<u64> {
         .parse()
         .ok()?;
     (views > 0).then_some(views)
+}
+
+/// The video length group Home is limited to, by the viewer's choice; `None` when off.
+pub async fn duration_group(pool: &SqlitePool) -> Option<DurationRange> {
+    let key = get_setting(pool, DURATION_GROUP_SETTING)
+        .await
+        .ok()
+        .flatten()?;
+    duration_range(&key)
 }
 
 /// The fewest subscribers a channel may have to show on Home, by the viewer's choice; `None` when off.
@@ -168,6 +181,8 @@ pub struct Exclusions {
     hide_music_videos: bool,
     /// The fewest views a video may have, when the viewer set a minimum.
     min_views: Option<u64>,
+    /// The video length group Home is limited to, when the viewer chose one.
+    duration_group: Option<DurationRange>,
     /// The fewest subscribers a channel may have, when the viewer set a minimum, and the counts
     /// read so far. A channel whose count is not known yet is never ruled out.
     min_subscribers: Option<u64>,
@@ -197,6 +212,12 @@ impl Exclusions {
         self.min_views
     }
 
+    /// The video length group Home is limited to, when the viewer chose one.
+    #[must_use]
+    pub fn duration_group(&self) -> Option<DurationRange> {
+        self.duration_group
+    }
+
     /// Whether music videos are kept off Home.
     pub fn hides_music_videos(&self) -> bool {
         self.hide_music_videos
@@ -219,6 +240,9 @@ impl Exclusions {
             || self
                 .min_views
                 .is_some_and(|min| is_below_min_views(&card.video, min))
+            || self
+                .duration_group
+                .is_some_and(|group| is_outside_duration_range(&card.video, group))
             || self
                 .age_limit
                 .is_some_and(|(max_age_ms, now_ms)| !is_within(card, now_ms, max_age_ms))
@@ -306,6 +330,7 @@ impl Inputs {
         let pin_fresh_subs = pins_fresh_subs(pool).await;
         let hide_music_videos = hides_music_videos(pool).await;
         let min_views = min_views(pool).await;
+        let duration_group = duration_group(pool).await;
         let min_subscribers = min_subscribers(pool).await;
         let channel_subscribers = if min_subscribers.is_some() {
             crate::db::channel_subscribers::fresh(pool, i64::try_from(now_ms).unwrap_or(i64::MAX))
@@ -331,6 +356,7 @@ impl Inputs {
                 age_limit: max_video_age_ms.map(|max_age_ms| (max_age_ms, now_ms)),
                 hide_music_videos,
                 min_views,
+                duration_group,
                 min_subscribers,
                 channel_subscribers,
                 matchers: BlockedMatchers::new(&brain.blocked_topics, &spec),

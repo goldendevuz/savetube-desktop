@@ -209,6 +209,98 @@ pub(super) mod tests {
     }
 }
 
+/// A video length range in seconds: from (included) to (excluded, `None` for no upper limit).
+pub type DurationRange = (u64, Option<u64>);
+
+/// The eight video length groups of the SaveTube CRM's G1–G8 filter: key, from, to.
+const DURATION_GROUPS: [(&str, u64, Option<u64>); 8] = [
+    ("g1", 1, Some(60)),
+    ("g2", 60, Some(300)),
+    ("g3", 300, Some(600)),
+    ("g4", 600, Some(1_200)),
+    ("g5", 1_200, Some(2_400)),
+    ("g6", 2_400, Some(3_600)),
+    ("g7", 3_600, Some(7_200)),
+    ("g8", 7_200, None),
+];
+
+/// The length range of a group key ("g1" to "g8"); `None` for "any" or anything unknown.
+#[must_use]
+pub fn duration_range(key: &str) -> Option<DurationRange> {
+    let key = key.trim().to_ascii_lowercase();
+    DURATION_GROUPS
+        .iter()
+        .find(|(group, _, _)| *group == key)
+        .map(|&(_, from, to)| (from, to))
+}
+
+/// A video whose length is outside the group the viewer chose. Live streams, upcoming videos and
+/// videos with no readable length are never ruled out: they have no length, or it is not known.
+#[must_use]
+pub fn is_outside_duration_range(
+    video: &crate::models::video::VideoSummary,
+    (from, to): DurationRange,
+) -> bool {
+    if video.is_live || video.is_upcoming {
+        return false;
+    }
+    video
+        .duration_seconds
+        .filter(|seconds| *seconds > 0)
+        .is_some_and(|seconds| seconds < from || to.is_some_and(|to| seconds >= to))
+}
+
+#[cfg(test)]
+mod duration_range_tests {
+    use super::{duration_range, is_outside_duration_range};
+    use crate::models::video::VideoSummary;
+
+    fn video(seconds: Option<u64>) -> VideoSummary {
+        VideoSummary {
+            duration_seconds: seconds,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn groups_match_the_crm_boundaries() {
+        let outside = |key: &str, seconds: u64| {
+            is_outside_duration_range(&video(Some(seconds)), duration_range(key).unwrap())
+        };
+        assert!(!outside("g1", 1) && !outside("g1", 59) && outside("g1", 60));
+        assert!(
+            outside("g2", 59) && !outside("g2", 60) && !outside("g2", 299) && outside("g2", 300)
+        );
+        assert!(!outside("g3", 599) && outside("g3", 600));
+        assert!(!outside("g4", 1_199) && outside("g4", 1_200));
+        assert!(!outside("g5", 2_399) && outside("g5", 2_400));
+        assert!(!outside("g6", 3_599) && outside("g6", 3_600));
+        assert!(!outside("g7", 7_199) && outside("g7", 7_200));
+        assert!(outside("g8", 7_199) && !outside("g8", 7_200) && !outside("g8", 36_000));
+    }
+
+    #[test]
+    fn any_and_unknown_keys_are_not_a_group() {
+        assert!(duration_range("any").is_none());
+        assert!(duration_range("").is_none());
+        assert!(duration_range("g9").is_none());
+        assert!(duration_range(" G3 ").is_some());
+    }
+
+    #[test]
+    fn keeps_videos_with_no_known_length_and_live_ones() {
+        let range = duration_range("g4").unwrap();
+        assert!(!is_outside_duration_range(&video(None), range));
+        assert!(!is_outside_duration_range(&video(Some(0)), range));
+        let mut live = video(Some(30));
+        live.is_live = true;
+        assert!(!is_outside_duration_range(&live, range));
+        let mut upcoming = video(Some(30));
+        upcoming.is_upcoming = true;
+        assert!(!is_outside_duration_range(&upcoming, range));
+    }
+}
+
 /// A video the viewer's minimum view count rules out. Live streams and videos with no readable
 /// count are never ruled out: their numbers are not views, or are not known.
 #[must_use]
