@@ -48,7 +48,7 @@ describe("app language", () => {
     const { appLanguageOptions } = await import("./appLanguageOptions");
     const options = appLanguageOptions();
     expect(options[0]).toEqual({ value: "", label: "English" });
-    expect(options.length).toBe(34);
+    expect(options.length).toBe(35);
     expect(options.find((option) => option.value === "de")?.label).toBe("Deutsch");
   });
 });
