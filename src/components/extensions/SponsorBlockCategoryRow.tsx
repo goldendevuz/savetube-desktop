@@ -89,7 +89,7 @@ export function SponsorBlockCategoryRow({
         >
           <div className="mb-2.5 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-widest text-chrome-neutral-500">
-              Segment color
+              {getString("sponsorblock_segment_color")}
             </span>
             <button
               type="button"

@@ -1,4 +1,6 @@
-export const REGION_OPTIONS = [
+import { APP_LOCALE, getString } from "./i18n/index";
+
+const ENGLISH_REGION_OPTIONS = [
   { value: 'AUTO', label: 'Automatic (no country limit)' },
   { value: 'DZ', label: 'Algeria' }, { value: 'AR', label: 'Argentina' }, { value: 'AU', label: 'Australia' },
   { value: 'AT', label: 'Austria' }, { value: 'AZ', label: 'Azerbaijan' }, { value: 'BH', label: 'Bahrain' },
@@ -37,3 +39,33 @@ export const REGION_OPTIONS = [
   { value: 'US', label: 'United States' }, { value: 'UY', label: 'Uruguay' }, { value: 'UZ', label: 'Uzbekistan (no country limit)' }, { value: 'VE', label: 'Venezuela' },
   { value: 'VN', label: 'Vietnam' }, { value: 'YE', label: 'Yemen' }, { value: 'ZW', label: 'Zimbabwe' },
 ];
+
+let cachedLocale = '';
+let cachedOptions: { value: string; label: string }[] = [];
+
+/**
+ * The regions by name in the interface language (the browser's own region names), with English as the fallback.
+ * "Automatic" and Uzbekistan have their own wording.
+ */
+export function regionOptions(): { value: string; label: string }[] {
+  if (cachedLocale === APP_LOCALE && cachedOptions.length > 0) return cachedOptions;
+  let names: Intl.DisplayNames | null = null;
+  try {
+    names = new Intl.DisplayNames([APP_LOCALE], { type: 'region' });
+  } catch {
+    names = null;
+  }
+  cachedOptions = ENGLISH_REGION_OPTIONS.map(({ value, label }) => {
+    if (value === 'AUTO') return { value, label: getString('region_auto') };
+    if (value === 'UZ') return { value, label: getString('region_uz_no_limit') };
+    let translated: string | undefined;
+    try {
+      translated = APP_LOCALE === 'en' ? undefined : names?.of(value);
+    } catch {
+      translated = undefined;
+    }
+    return { value, label: translated ?? label };
+  });
+  cachedLocale = APP_LOCALE;
+  return cachedOptions;
+}

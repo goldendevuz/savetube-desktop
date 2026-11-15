@@ -294,7 +294,7 @@ export function PlaylistDetailsPage({
           onClick={() => navigate(-1)}
           className="mt-4 text-sm font-medium text-[var(--color-primary)] transition-colors hover:opacity-90"
         >
-          Go back
+          {getString("go_back_button")}
         </button>
       </div>
     );

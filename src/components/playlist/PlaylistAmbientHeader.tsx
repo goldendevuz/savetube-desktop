@@ -304,7 +304,7 @@ export function PlaylistAmbientHeader({
               className="!bg-chrome-neutral-100 !text-chrome-neutral-950 hover:!opacity-90"
             >
               <Play size={18} fill="currentColor" />
-              Play All
+              {getString("playlist_play_all")}
             </Button>
             <Button
               variant="tonal"
@@ -313,7 +313,7 @@ export function PlaylistAmbientHeader({
               onClick={onShuffle}
             >
               <Shuffle size={18} />
-              Shuffle
+              {getString("shuffle")}
             </Button>
           </div>
         </div>

@@ -171,11 +171,11 @@ export function SponsorBlockSubmitDialog({
 
         <div className="mt-6 flex items-center justify-between gap-3">
           <p className="text-[11px] leading-tight text-chrome-neutral-500">
-            Submitted publicly to the SponsorBlock database.
+            {getString("sponsorblock_submit_note")}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose} disabled={submitting}>
-              Cancel
+              {getString("cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={submitting} className="min-w-20">
               {submitting ? <Loader2 size={16} className="animate-spin" /> : "Submit"}

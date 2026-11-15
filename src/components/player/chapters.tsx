@@ -139,7 +139,7 @@ export const Chapters: React.FC<ChaptersProps> = ({
       .catch((err) => {
         console.error("[Chapters/Transcript] Error fetching subtitles:", err);
         if (!cancelled) {
-          setTranscriptError("Failed to load transcript.");
+          setTranscriptError(getString("transcript_load_failed"));
           setLoadingTranscript(false);
           setTranscriptCues([]);
         }
@@ -197,7 +197,7 @@ export const Chapters: React.FC<ChaptersProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-chrome-white/5 px-4 py-3.5 shrink-0">
         <h2 className="text-base font-bold tracking-tight text-chrome-zinc-100 flex items-center gap-2">
-          In this video
+          {getString("chapters_in_this_video")}
         </h2>
         <button
           type="button"
@@ -221,7 +221,7 @@ export const Chapters: React.FC<ChaptersProps> = ({
               : "border-transparent text-chrome-zinc-600 cursor-not-allowed"
           }`}
         >
-          Chapters
+          {getString("settings_button_chapters")}
         </button>
         <button
           type="button"
@@ -234,7 +234,7 @@ export const Chapters: React.FC<ChaptersProps> = ({
               : "border-transparent text-chrome-zinc-600 cursor-not-allowed"
           }`}
         >
-          Transcript
+          {getString("player_transcript_tab")}
         </button>
       </div>
 
