@@ -3710,5 +3710,7 @@
   "times_up_body": "Сегодня вы смотрели %1$s. Ваш дневной лимит: %2$s.",
   "times_up_keep_watching": "Продолжить просмотр",
   "times_up_keep_watching_wait": "Продолжить просмотр через %1$d с",
-  "times_up_keep_watching_note": "«Продолжить просмотр» добавляет 15 минут."
+  "times_up_keep_watching_note": "«Продолжить просмотр» добавляет 15 минут.",
+  "top_channels_month_title": "Самые просматриваемые каналы в этом месяце",
+  "shorts_share_label": "Shorts занимают %s вашего времени на видео"
 }

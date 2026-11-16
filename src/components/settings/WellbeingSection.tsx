@@ -8,6 +8,7 @@ import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { SettingItem } from "./SettingItem";
 import { SettingsGroup } from "./SettingsGroup";
 import { DailyLimitRows } from "./DailyLimitRows";
+import { TopChannelsCard } from "./TopChannelsCard";
 import { WatchTimeCard } from "./WatchTimeCard";
 
 const BREAK_FREQUENCIES = ["5", "10", "15", "20", "30", "45", "60", "90", "120"];
@@ -38,6 +39,7 @@ export function WellbeingSection() {
   return (
     <SettingsGroup title={getString("settings_group_wellbeing")}>
       <WatchTimeCard />
+      <TopChannelsCard />
       <DailyLimitRows />
       <SettingItem
         title={getString("bedtime_reminder_title")}

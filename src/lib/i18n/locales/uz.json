@@ -3710,5 +3710,7 @@
   "times_up_body": "Bugun %1$s koʻrdingiz. Kunlik chegarangiz %2$s.",
   "times_up_keep_watching": "Koʻrishda davom etish",
   "times_up_keep_watching_wait": "%1$d s dan keyin koʻrishda davom etish",
-  "times_up_keep_watching_note": "Koʻrishda davom etish 15 daqiqa qoʻshadi."
+  "times_up_keep_watching_note": "Koʻrishda davom etish 15 daqiqa qoʻshadi.",
+  "top_channels_month_title": "Bu oy eng koʻp koʻrilgan kanallar",
+  "shorts_share_label": "Video uchun ketgan vaqtning %s qismi Shorts"
 }
