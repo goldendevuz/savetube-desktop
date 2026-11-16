@@ -15,7 +15,6 @@ import {
   encodeShared,
   extend,
   isUsedUp,
-  localEpochDay,
   mergeShared,
   parseShared,
   rollover,
@@ -23,6 +22,7 @@ import {
   validMinutes,
   withOwn,
 } from "./dailyLimit";
+import { epochDayIn, zoneOrDefault } from "./timeZone";
 
 const TICK_MS = 1_000;
 /** A longer gap between ticks means the computer slept: that time was not spent watching. */
@@ -143,7 +143,7 @@ export function useDailyLimit() {
       const minutes = validMinutes(Number(values[SETTINGS.DAILY_LIMIT_MINUTES]));
       const countMusic = values[SETTINGS.DAILY_LIMIT_MUSIC] === "true";
       const state = useDailyLimitStore.getState();
-      const base = rollover(state.tally, localEpochDay(now));
+      const base = rollover(state.tally, epochDayIn(zoneOrDefault(values[SETTINGS.TIME_ZONE]), now));
       if (base !== state.tally) dirty = true;
 
       const counting = videoPlaying() || (countMusic && musicPlaying());

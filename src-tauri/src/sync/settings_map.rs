@@ -119,6 +119,7 @@ const SHARED: &[Shared] = &[
     shared("daily_limit", "daily_limit", Kind::Bool),
     shared("daily_limit_minutes", "daily_limit_minutes", Kind::Whole),
     shared("daily_limit_music", "daily_limit_music", Kind::Bool),
+    shared("time_zone", "time_zone", Kind::Text),
     // Each device's count of today, one JSON text. Merged on arrival, see `merge_daily_time`.
     shared("daily_time", DAILY_TALLY_KEY, Kind::Text),
     // Each device's published watch statistics, one JSON text. Merged on arrival, see `merge_watch_stats`.

@@ -9,11 +9,11 @@ import {
   changeNeedsWait,
   aggregate,
   latestDay,
-  localEpochDay,
   parseShared,
   validMinutes,
   type DailyLimitSettings,
 } from "../../lib/wellbeing/dailyLimit";
+import { epochDayIn, zoneOrDefault } from "../../lib/wellbeing/timeZone";
 import { setSettingValue, useAppSettingsStore } from "../../store/useAppSettingsStore";
 import { useDailyLimitStore } from "../../store/useDailyLimitStore";
 import { DailyLimitDevices } from "./DailyLimitDevices";
@@ -75,7 +75,7 @@ export function DailyLimitRows() {
 
   const change = (next: DailyLimitSettings) => {
     const tally = liveTally ?? (latest === null ? null : aggregate(parseShared(values[SETTINGS.DAILY_TALLY]), latest));
-    if (changeNeedsWait(current, next, tally, localEpochDay(Date.now()))) setPending(next);
+    if (changeNeedsWait(current, next, tally, epochDayIn(zoneOrDefault(values[SETTINGS.TIME_ZONE]), Date.now()))) setPending(next);
     else write(next);
   };
 

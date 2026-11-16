@@ -3718,5 +3718,7 @@
   "daily_limit_device_own": "%s (this device)",
   "daily_limit_device_unnamed": "Another device",
   "watch_time_devices_title": "By device this week",
-  "top_channels_all_devices": "All your devices together"
+  "top_channels_all_devices": "All your devices together",
+  "time_zone_title": "Time zone",
+  "time_zone_description": "Where a day starts for the daily limit, and the clock for the bedtime reminder"
 }

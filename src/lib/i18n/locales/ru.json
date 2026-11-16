@@ -3718,5 +3718,7 @@
   "daily_limit_device_own": "%s (это устройство)",
   "daily_limit_device_unnamed": "Другое устройство",
   "watch_time_devices_title": "На этой неделе по устройствам",
-  "top_channels_all_devices": "Все ваши устройства вместе"
+  "top_channels_all_devices": "Все ваши устройства вместе",
+  "time_zone_title": "Часовой пояс",
+  "time_zone_description": "Когда начинается день для дневного лимита и по каким часам работает напоминание о сне"
 }

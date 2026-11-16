@@ -55,7 +55,8 @@ vi.mock("../../store/useMusicPlayerStore", () => ({
 const { useDailyLimit, keepWatching } = await import("./useDailyLimit");
 const { useDailyLimitStore } = await import("../../store/useDailyLimitStore");
 const { SETTINGS } = await import("../settings/schema");
-const { EXTENSION_MS, encodeShared, localEpochDay, parseShared, remainingMs } = await import("./dailyLimit");
+const { EXTENSION_MS, encodeShared, parseShared, remainingMs } = await import("./dailyLimit");
+const { epochDayIn } = await import("./timeZone");
 
 const MINUTE = 60_000;
 let host: HTMLDivElement;
@@ -88,11 +89,11 @@ function saved() {
   return parseShared(db.rows[SETTINGS.DAILY_TALLY]);
 }
 
-const today = () => localEpochDay(Date.now());
+const today = () => epochDayIn("Asia/Tashkent", Date.now());
 
 beforeEach(() => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(2026, 10, 16, 12, 0));
+  vi.setSystemTime(new Date(Date.UTC(2026, 10, 16, 7, 0))); // 12:00 in Tashkent
   notifications.length = 0;
   db.rows = { [SETTINGS.DAILY_LIMIT_DEVICE]: "me" };
   settings.values = {
@@ -240,7 +241,7 @@ describe("the daily limit", () => {
     await mount();
     await advance(10 * MINUTE);
     expect(tally().playedMs).toBeGreaterThan(0);
-    vi.setSystemTime(new Date(2026, 10, 17, 9, 0));
+    vi.setSystemTime(new Date(Date.UTC(2026, 10, 17, 4, 0))); // 09:00 in Tashkent the next day
     await advance(2000);
     expect(tally().day).toBe(today());
     expect(tally().playedMs).toBeLessThan(5000);

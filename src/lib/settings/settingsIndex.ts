@@ -244,6 +244,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ]),
   ...rows("wellbeing", [
     { title: "top_channels_month_title", keywords: ["wellbeing", "screen time", "statistics", "channels", "shorts", "most watched"] },
+    { title: "time_zone_title", summary: "time_zone_description", keywords: ["timezone", "clock", "utc", "tashkent", "midnight", "day"] },
     { title: "daily_limit_title", summary: "daily_limit_subtitle", keywords: ["wellbeing", "screen time", "usage", "limit", "time"] },
     { title: "daily_limit_time_title", summary: "daily_limit_time_description" },
     { title: "daily_limit_music_title", summary: "daily_limit_music_subtitle" },

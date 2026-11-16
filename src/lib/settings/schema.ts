@@ -204,6 +204,7 @@ export const SETTINGS = {
   DAILY_TALLY: "daily_tally",
   DAILY_LIMIT_DEVICE: "daily_limit_device",
   WATCH_STATS: "watch_stats",
+  TIME_ZONE: "time_zone",
   SHOW_REGION_PICKER_IN_EXPLORE: "show_region_picker_in_explore",
   TRENDING_REGION: "trending_region",
   APP_LANGUAGE: "app_language",
@@ -470,6 +471,7 @@ export const SETTING_SCOPES = {
   [SETTINGS.DAILY_TALLY]: "device",
   [SETTINGS.DAILY_LIMIT_DEVICE]: "device",
   [SETTINGS.WATCH_STATS]: "device",
+  [SETTINGS.TIME_ZONE]: "profile",
   [SETTINGS.SHOW_REGION_PICKER_IN_EXPLORE]: "device",
   [SETTINGS.TRENDING_REGION]: "device",
   [SETTINGS.APP_LANGUAGE]: "device",
@@ -824,6 +826,8 @@ export const SETTING_DEFINITIONS = [
   str(SETTINGS.DAILY_LIMIT_DEVICE, "content", "", "wired", undefined, "internal"),
   // Every device's published watch statistics (JSON); merged by sync, never edited by hand.
   str(SETTINGS.WATCH_STATS, "content", "", "wired", undefined, "internal"),
+  // An IANA zone name ("Asia/Tashkent"); a day of the daily limit and the bedtime clock follow it.
+  str(SETTINGS.TIME_ZONE, "content", "Asia/Tashkent", "wired"),
   bool(SETTINGS.SHOW_REGION_PICKER_IN_EXPLORE, "content", true, "wired"),
   str(SETTINGS.TRENDING_REGION, "content", "US", "wired"),
   str(SETTINGS.APP_LANGUAGE, "content", "", "wired"),
