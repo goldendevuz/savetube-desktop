@@ -103,3 +103,136 @@ export function changeNeedsWait(
   if (!ranOutToday || !current.enabled) return false;
   return !next.enabled || next.minutes < current.minutes || (current.countMusic && !next.countMusic);
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// The count of every device. A device only ever changes its own entry, and the total is the sum of the entries
+// of the day, so two devices playing at once never overwrite each other. The entries travel as one setting and
+// a receiving device merges them into its own instead of replacing them.
+// ---------------------------------------------------------------------------------------------------------
+
+/** What one device counted on one day: name, day, played time, Keep watching time and the two flags. */
+export interface DeviceCount {
+  n: string;
+  d: number;
+  p: number;
+  x: number;
+  r: boolean;
+  w: boolean;
+}
+
+export type SharedTally = Record<string, DeviceCount>;
+
+/** Entries more than this many days older than the newest are dropped. */
+export const SHARED_KEEP_DAYS = 7;
+
+export function parseShared(raw: string | null | undefined): SharedTally {
+  if (!raw) return {};
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  const out: SharedTally = {};
+  for (const [id, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e.d !== "number") continue;
+    out[id] = {
+      n: typeof e.n === "string" ? e.n : "",
+      d: e.d,
+      p: Math.max(0, Number(e.p ?? 0)),
+      x: Math.max(0, Number(e.x ?? 0)),
+      r: e.r === true,
+      w: e.w === true,
+    };
+  }
+  return out;
+}
+
+export function pruneShared(shared: SharedTally): SharedTally {
+  const days = Object.values(shared).map((entry) => entry.d);
+  if (days.length === 0) return shared;
+  const newest = Math.max(...days);
+  return Object.fromEntries(Object.entries(shared).filter(([, entry]) => entry.d >= newest - SHARED_KEEP_DAYS));
+}
+
+/** The text that is saved and sent: ids in order, so the same counts always give the same text. */
+export function encodeShared(shared: SharedTally): string {
+  const pruned = pruneShared(shared);
+  const sorted: SharedTally = {};
+  for (const id of Object.keys(pruned).sort()) {
+    const e = pruned[id]!;
+    sorted[id] = { n: e.n, d: e.d, p: e.p, x: e.x, r: e.r, w: e.w };
+  }
+  return JSON.stringify(sorted);
+}
+
+/** One device's entry from two copies: the later day wins; on the same day the larger count and either flag. */
+function mergeCount(a: DeviceCount, b: DeviceCount): DeviceCount {
+  if (a.d !== b.d) return a.d > b.d ? a : b;
+  return { n: a.n || b.n, d: a.d, p: Math.max(a.p, b.p), x: Math.max(a.x, b.x), r: a.r || b.r, w: a.w || b.w };
+}
+
+export function mergeShared(a: SharedTally, b: SharedTally): SharedTally {
+  const out: SharedTally = { ...a };
+  for (const [id, count] of Object.entries(b)) {
+    const own = out[id];
+    out[id] = own ? mergeCount(own, count) : count;
+  }
+  return pruneShared(out);
+}
+
+/** The newest day any device has counted, or null when none has. */
+export function latestDay(shared: SharedTally): number | null {
+  const days = Object.values(shared).map((entry) => entry.d);
+  return days.length === 0 ? null : Math.max(...days);
+}
+
+/** All devices' count for `day` as one tally. */
+export function aggregate(shared: SharedTally, day: number): DailyTally {
+  const entries = Object.values(shared).filter((entry) => entry.d === day);
+  return {
+    day,
+    playedMs: entries.reduce((sum, entry) => sum + entry.p, 0),
+    extraMs: entries.reduce((sum, entry) => sum + entry.x, 0),
+    warned: entries.some((entry) => entry.w),
+    reached: entries.some((entry) => entry.r),
+  };
+}
+
+/**
+ * Records `tally`, the all-devices count of its day, as this device's own entry: whatever it grew by since the
+ * stored total is this device's. Another device's entry is never touched.
+ */
+export function withOwn(shared: SharedTally, deviceId: string, name: string, tally: DailyTally): SharedTally {
+  const total = aggregate(shared, tally.day);
+  const current = shared[deviceId];
+  const own: DeviceCount = current && current.d === tally.day ? current : { n: name, d: tally.day, p: 0, x: 0, r: false, w: false };
+  const next: DeviceCount = {
+    n: name || own.n,
+    d: tally.day,
+    p: own.p + Math.max(0, tally.playedMs - total.playedMs),
+    x: own.x + Math.max(0, tally.extraMs - total.extraMs),
+    r: own.r || tally.reached,
+    w: own.w || tally.warned,
+  };
+  return pruneShared({ ...shared, [deviceId]: next });
+}
+
+/** One device's share of a day, for the list under the total. */
+export interface DeviceShare {
+  id: string;
+  name: string;
+  ms: number;
+  own: boolean;
+}
+
+/** The devices that counted on `day`, the one with the most time first. */
+export function deviceShares(shared: SharedTally, day: number, ownId: string): DeviceShare[] {
+  return Object.entries(shared)
+    .filter(([, entry]) => entry.d === day)
+    .map(([id, entry]) => ({ id, name: entry.n, ms: entry.p, own: id === ownId }))
+    .sort((a, b) => b.ms - a.ms || a.id.localeCompare(b.id));
+}

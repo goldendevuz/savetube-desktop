@@ -125,3 +125,84 @@ describe("changing the limit after it ran out", () => {
     expect(changeNeedsWait(on, { ...on, enabled: false }, ranOut, 11)).toBe(false);
   });
 });
+
+import {
+  aggregate,
+  deviceShares,
+  encodeShared,
+  latestDay,
+  mergeShared,
+  parseShared,
+  withOwn,
+  type DeviceCount,
+  type SharedTally,
+} from "./dailyLimit";
+
+const count = (over: Partial<DeviceCount> = {}): DeviceCount => ({ n: "", d: 10, p: 0, x: 0, r: false, w: false, ...over });
+
+describe("the shared count of all devices", () => {
+  it("is the sum of the devices of the newest day", () => {
+    const shared: SharedTally = {
+      phone: count({ n: "Phone", p: 30 * MIN, x: 15 * MIN }),
+      laptop: count({ n: "Laptop", p: 20 * MIN, r: true }),
+      old: count({ d: 9, p: 90 * MIN }),
+    };
+    expect(latestDay(shared)).toBe(10);
+    const total = aggregate(shared, 10);
+    expect(total.playedMs).toBe(50 * MIN);
+    expect(total.extraMs).toBe(15 * MIN);
+    expect(total.reached).toBe(true);
+    expect(total.warned).toBe(false);
+  });
+
+  it("merges to each device's larger count and never adds time twice", () => {
+    const a: SharedTally = { phone: count({ p: 30 * MIN }), laptop: count({ p: 5 * MIN }) };
+    const b: SharedTally = { phone: count({ p: 10 * MIN }), laptop: count({ p: 25 * MIN }) };
+    const merged = mergeShared(a, b);
+    expect(merged.phone!.p).toBe(30 * MIN);
+    expect(merged.laptop!.p).toBe(25 * MIN);
+    expect(mergeShared(merged, merged)).toEqual(merged);
+  });
+
+  it("lets a later day replace an earlier one and keeps flags and names on the same day", () => {
+    expect(mergeShared({ phone: count({ d: 10, p: 99 * MIN, r: true }) }, { phone: count({ d: 11, p: MIN }) }).phone).toEqual(
+      count({ d: 11, p: MIN }),
+    );
+    const same = mergeShared({ phone: count({ n: "", w: true }) }, { phone: count({ n: "Phone", r: true, p: MIN }) }).phone!;
+    expect(same.w && same.r).toBe(true);
+    expect(same.n).toBe("Phone");
+  });
+
+  it("books only this device's own growth", () => {
+    const shared: SharedTally = { laptop: count({ n: "Laptop", p: 20 * MIN }) };
+    const next = withOwn(shared, "me", "Windows PC", { day: 10, playedMs: 25 * MIN, extraMs: 0, warned: false, reached: false });
+    expect(next.laptop!.p).toBe(20 * MIN);
+    expect(next.me).toMatchObject({ n: "Windows PC", p: 5 * MIN });
+    expect(aggregate(next, 10).playedMs).toBe(25 * MIN);
+  });
+
+  it("lists the devices of the day, the biggest first, and marks this one", () => {
+    const shared: SharedTally = {
+      me: count({ n: "Windows PC", p: 10 * MIN }),
+      phone: count({ n: "SM-A515F", p: 40 * MIN }),
+      old: count({ d: 9, p: 99 * MIN }),
+    };
+    expect(deviceShares(shared, 10, "me").map((d) => [d.name, d.ms, d.own])).toEqual([
+      ["SM-A515F", 40 * MIN, false],
+      ["Windows PC", 10 * MIN, true],
+    ]);
+  });
+
+  it("survives the trip through text, and ignores damaged or old-format text", () => {
+    const shared: SharedTally = { me: count({ n: "Windows PC", p: 3 * MIN, x: 15 * MIN, r: true, w: true }) };
+    expect(parseShared(encodeShared(shared))).toEqual(shared);
+    expect(parseShared("not json")).toEqual({});
+    expect(parseShared('{"day":1,"playedMs":2}')).toEqual({});
+    expect(parseShared(null)).toEqual({});
+  });
+
+  it("drops entries more than a week older than the newest", () => {
+    const merged = mergeShared({ ancient: count({ d: 1, p: MIN }) }, { fresh: count({ d: 20 }) });
+    expect(Object.keys(merged)).toEqual(["fresh"]);
+  });
+});

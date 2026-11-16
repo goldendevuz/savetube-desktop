@@ -6,13 +6,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const notifications = vi.hoisted(() => [] as string[]);
 const settings = vi.hoisted(() => ({ values: {} as Record<string, string> }));
-const saved = vi.hoisted(() => [] as Array<[string, string]>);
+const db = vi.hoisted(() => ({ rows: {} as Record<string, string> }));
 const player = vi.hoisted(() => ({ video: false, music: false, videoPauses: 0, musicPauses: 0 }));
 
 vi.mock("../api/downloads", () => ({
   showDownloadNotification: async (title: string) => {
     notifications.push(title);
   },
+}));
+vi.mock("../api/db", () => ({
+  getSetting: async (key: string) => db.rows[key] ?? null,
 }));
 vi.mock("../../store/useAppSettingsStore", () => {
   const useAppSettingsStore = Object.assign((select: (state: typeof settings) => unknown) => select(settings), {
@@ -21,8 +24,7 @@ vi.mock("../../store/useAppSettingsStore", () => {
   return {
     useAppSettingsStore,
     setSettingValue: async (key: string, value: string) => {
-      saved.push([key, value]);
-      settings.values[key] = value;
+      db.rows[key] = value;
       return true;
     },
   };
@@ -50,10 +52,10 @@ vi.mock("../../store/useMusicPlayerStore", () => ({
   },
 }));
 
-const { useDailyLimit } = await import("./useDailyLimit");
+const { useDailyLimit, keepWatching } = await import("./useDailyLimit");
 const { useDailyLimitStore } = await import("../../store/useDailyLimitStore");
 const { SETTINGS } = await import("../settings/schema");
-const { EXTENSION_MS, extend, localEpochDay, remainingMs } = await import("./dailyLimit");
+const { EXTENSION_MS, encodeShared, localEpochDay, parseShared, remainingMs } = await import("./dailyLimit");
 
 const MINUTE = 60_000;
 let host: HTMLDivElement;
@@ -64,27 +66,35 @@ function Limit() {
   return null;
 }
 
-function mount() {
-  act(() => root.render(createElement(Limit)));
-}
-
-function advance(ms: number) {
-  act(() => {
-    vi.advanceTimersByTime(ms);
+async function mount() {
+  await act(async () => {
+    root.render(createElement(Limit));
   });
 }
 
-function currentTally() {
-  const tally = useDailyLimitStore.getState().tally;
-  if (!tally) throw new Error("no tally yet");
-  return tally;
+async function advance(ms: number) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
 }
+
+function tally() {
+  const t = useDailyLimitStore.getState().tally;
+  if (!t) throw new Error("no count yet");
+  return t;
+}
+
+function saved() {
+  return parseShared(db.rows[SETTINGS.DAILY_TALLY]);
+}
+
+const today = () => localEpochDay(Date.now());
 
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 10, 16, 12, 0));
   notifications.length = 0;
-  saved.length = 0;
+  db.rows = { [SETTINGS.DAILY_LIMIT_DEVICE]: "me" };
   settings.values = {
     [SETTINGS.DAILY_LIMIT]: "true",
     [SETTINGS.DAILY_LIMIT_MINUTES]: "30",
@@ -94,7 +104,7 @@ beforeEach(() => {
   player.music = false;
   player.videoPauses = 0;
   player.musicPauses = 0;
-  useDailyLimitStore.setState({ tally: null, dialogOpen: false, keepWatchingAt: 0 });
+  useDailyLimitStore.setState({ shared: {}, ownId: "", tally: null, dialogOpen: false, keepWatchingAt: 0 });
   host = document.createElement("div");
   root = createRoot(host);
 });
@@ -106,122 +116,144 @@ afterEach(() => {
 });
 
 describe("the daily limit", () => {
-  it("does nothing while it is off", () => {
+  it("does nothing while it is off", async () => {
     settings.values[SETTINGS.DAILY_LIMIT] = "false";
     player.video = true;
-    mount();
-    advance(10 * MINUTE);
+    await mount();
+    await advance(10 * MINUTE);
     expect(useDailyLimitStore.getState().tally).toBeNull();
-    expect(saved).toEqual([]);
+    expect(db.rows[SETTINGS.DAILY_TALLY]).toBeUndefined();
   });
 
-  it("counts only the time something plays", () => {
-    mount();
-    advance(5 * MINUTE);
-    expect(currentTally().playedMs).toBe(0);
+  it("counts only the time something plays, as this device's own share", async () => {
+    await mount();
+    await advance(5 * MINUTE);
+    expect(useDailyLimitStore.getState().tally?.playedMs ?? 0).toBe(0);
     player.video = true;
-    advance(10 * MINUTE);
-    const played = currentTally().playedMs;
-    expect(played).toBeGreaterThanOrEqual(10 * MINUTE - 2000);
-    expect(played).toBeLessThanOrEqual(10 * MINUTE + 2000);
+    await advance(10 * MINUTE);
+    expect(tally().playedMs).toBeGreaterThanOrEqual(10 * MINUTE - 2000);
+    expect(tally().playedMs).toBeLessThanOrEqual(10 * MINUTE + 2000);
+    expect(saved().me?.p).toBeGreaterThan(9 * MINUTE);
+    expect(saved().me?.n).toMatch(/PC|Mac/);
   });
 
-  it("counts music only when asked to", () => {
+  it("counts music only when asked to", async () => {
     player.music = true;
-    mount();
-    advance(5 * MINUTE);
-    expect(currentTally().playedMs).toBe(0);
+    await mount();
+    await advance(5 * MINUTE);
+    expect(useDailyLimitStore.getState().tally?.playedMs ?? 0).toBe(0);
     settings.values[SETTINGS.DAILY_LIMIT_MUSIC] = "true";
-    advance(5 * MINUTE);
-    expect(currentTally().playedMs).toBeGreaterThan(4 * MINUTE);
+    await advance(5 * MINUTE);
+    expect(tally().playedMs).toBeGreaterThan(4 * MINUTE);
   });
 
-  it("warns once, five minutes before the end", () => {
+  it("warns once, five minutes before the end", async () => {
     player.video = true;
-    mount();
-    advance(24 * MINUTE);
+    await mount();
+    await advance(24 * MINUTE);
     expect(notifications).toEqual([]);
-    advance(2 * MINUTE);
+    await advance(2 * MINUTE);
     expect(notifications).toHaveLength(1);
-    expect(currentTally().warned).toBe(true);
-    advance(2 * MINUTE);
+    expect(tally().warned).toBe(true);
+    await advance(2 * MINUTE);
     expect(notifications).toHaveLength(1);
   });
 
-  it("pauses everything and shows the dialog when the time is up", () => {
+  it("pauses everything and shows the dialog when the time is up", async () => {
     player.video = true;
-    mount();
-    advance(31 * MINUTE);
+    await mount();
+    await advance(31 * MINUTE);
     expect(player.video).toBe(false);
-    expect(player.videoPauses).toBeGreaterThan(0);
     expect(useDailyLimitStore.getState().dialogOpen).toBe(true);
-    expect(currentTally().reached).toBe(true);
-    const tallySaves = saved.filter(([key]) => key === SETTINGS.DAILY_TALLY);
-    const lastSave = tallySaves[tallySaves.length - 1];
-    expect(JSON.parse(lastSave?.[1] ?? "{}").reached).toBe(true);
+    expect(tally().reached).toBe(true);
+    expect(saved().me?.r).toBe(true);
   });
 
-  it("pauses music too when music counts", () => {
+  it("pauses music too when music counts", async () => {
     settings.values[SETTINGS.DAILY_LIMIT_MUSIC] = "true";
     player.music = true;
-    mount();
-    advance(31 * MINUTE);
+    await mount();
+    await advance(31 * MINUTE);
     expect(player.music).toBe(false);
     expect(player.musicPauses).toBe(1);
     expect(useDailyLimitStore.getState().dialogOpen).toBe(true);
   });
 
-  it("gives fifteen more minutes with Keep watching, and stops again after them", () => {
-    player.video = true;
-    mount();
-    advance(31 * MINUTE);
-    act(() => {
-      useDailyLimitStore.getState().closeDialog();
-      useDailyLimitStore.getState().setTally(extend(30, currentTally()));
+  it("adds the time another device counted today to the limit", async () => {
+    db.rows[SETTINGS.DAILY_TALLY] = encodeShared({
+      phone: { n: "SM-A515F", d: today(), p: 20 * MINUTE, x: 0, r: false, w: false },
     });
-    expect(remainingMs(30, currentTally())).toBe(EXTENSION_MS);
     player.video = true;
-    advance(10 * MINUTE);
+    await mount();
+    await advance(5 * MINUTE);
     expect(useDailyLimitStore.getState().dialogOpen).toBe(false);
-    advance(6 * MINUTE);
+    expect(tally().playedMs).toBeGreaterThan(24 * MINUTE);
+    await advance(6 * MINUTE);
     expect(useDailyLimitStore.getState().dialogOpen).toBe(true);
-    expect(player.video).toBe(false);
+    // This device only booked its own time; the phone's entry is untouched.
+    expect(saved().me!.p).toBeLessThan(12 * MINUTE);
+    expect(saved().phone!.p).toBe(20 * MINUTE);
   });
 
-  it("starts a new day from nothing", () => {
-    player.video = true;
-    mount();
-    advance(10 * MINUTE);
-    expect(currentTally().playedMs).toBeGreaterThan(0);
-    vi.setSystemTime(new Date(2026, 10, 17, 9, 0));
-    advance(2000);
-    expect(currentTally().day).toBe(localEpochDay(Date.now()));
-    expect(currentTally().playedMs).toBeLessThan(5000);
-    expect(currentTally().reached).toBe(false);
-  });
-
-  it("does not count the time a sleeping computer was away", () => {
-    player.video = true;
-    mount();
-    advance(MINUTE);
-    const before = currentTally().playedMs;
-    vi.setSystemTime(Date.now() + 3 * 60 * MINUTE);
-    advance(1000);
-    expect(currentTally().playedMs - before).toBeLessThan(5000);
-  });
-
-  it("reads the count saved earlier today", () => {
-    const today = localEpochDay(Date.now());
-    settings.values[SETTINGS.DAILY_TALLY] = JSON.stringify({
-      day: today,
-      playedMs: 20 * MINUTE,
-      extraMs: 0,
-      warned: false,
-      reached: false,
+  it("picks up a count that another device sends while this one is open", async () => {
+    await mount();
+    await advance(MINUTE);
+    db.rows[SETTINGS.DAILY_TALLY] = encodeShared({
+      phone: { n: "SM-A515F", d: today(), p: 7 * MINUTE, x: 0, r: false, w: false },
     });
+    await advance(20_000);
+    expect(tally().playedMs).toBe(7 * MINUTE);
+  });
+
+  it("never loses another device's entry when it saves its own", async () => {
     player.video = true;
-    mount();
-    advance(1000);
-    expect(currentTally().playedMs).toBeGreaterThanOrEqual(20 * MINUTE);
+    await mount();
+    await advance(5_000);
+    db.rows[SETTINGS.DAILY_TALLY] = encodeShared({
+      ...saved(),
+      phone: { n: "SM-A515F", d: today(), p: 3 * MINUTE, x: 0, r: false, w: false },
+    });
+    await advance(30_000);
+    expect(saved().phone?.p).toBe(3 * MINUTE);
+    expect(saved().me?.p).toBeGreaterThan(30_000);
+  });
+
+  it("gives fifteen more minutes with Keep watching, to the limit of all devices", async () => {
+    player.video = true;
+    await mount();
+    await advance(31 * MINUTE);
+    act(() => useDailyLimitStore.getState().closeDialog());
+    await act(async () => {
+      await keepWatching(30);
+    });
+    expect(remainingMs(30, tally())).toBe(EXTENSION_MS);
+    expect(saved().me?.x).toBeGreaterThanOrEqual(EXTENSION_MS);
+    player.video = true;
+    await advance(10 * MINUTE);
+    expect(useDailyLimitStore.getState().dialogOpen).toBe(false);
+    await advance(6 * MINUTE);
+    expect(useDailyLimitStore.getState().dialogOpen).toBe(true);
+  });
+
+  it("starts a new day from nothing", async () => {
+    player.video = true;
+    await mount();
+    await advance(10 * MINUTE);
+    expect(tally().playedMs).toBeGreaterThan(0);
+    vi.setSystemTime(new Date(2026, 10, 17, 9, 0));
+    await advance(2000);
+    expect(tally().day).toBe(today());
+    expect(tally().playedMs).toBeLessThan(5000);
+    expect(tally().reached).toBe(false);
+  });
+
+  it("does not count the time a sleeping computer was away", async () => {
+    player.video = true;
+    await mount();
+    await advance(MINUTE);
+    const before = tally().playedMs;
+    vi.setSystemTime(Date.now() + 3 * 60 * MINUTE);
+    await advance(1000);
+    expect(tally().playedMs - before).toBeLessThan(5000);
   });
 });

@@ -3712,5 +3712,9 @@
   "times_up_keep_watching_wait": "Keep watching in %1$d s",
   "times_up_keep_watching_note": "Keep watching adds 15 minutes.",
   "top_channels_month_title": "Most watched channels this month",
-  "shorts_share_label": "Shorts make up %s of your video time"
+  "shorts_share_label": "Shorts make up %s of your video time",
+  "daily_limit_today_total": "Today on all your devices: %1$s of %2$s",
+  "daily_limit_left": "%s left",
+  "daily_limit_device_own": "%s (this device)",
+  "daily_limit_device_unnamed": "Another device"
 }

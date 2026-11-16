@@ -3712,5 +3712,9 @@
   "times_up_keep_watching_wait": "%1$d s dan keyin koʻrishda davom etish",
   "times_up_keep_watching_note": "Koʻrishda davom etish 15 daqiqa qoʻshadi.",
   "top_channels_month_title": "Bu oy eng koʻp koʻrilgan kanallar",
-  "shorts_share_label": "Video uchun ketgan vaqtning %s qismi Shorts"
+  "shorts_share_label": "Video uchun ketgan vaqtning %s qismi Shorts",
+  "daily_limit_today_total": "Bugun barcha qurilmalarda: %1$s / %2$s",
+  "daily_limit_left": "%s qoldi",
+  "daily_limit_device_own": "%s (shu qurilma)",
+  "daily_limit_device_unnamed": "Boshqa qurilma"
 }

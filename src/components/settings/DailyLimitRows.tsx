@@ -7,13 +7,16 @@ import {
   MINUTE_CHOICES,
   WAIT_MS,
   changeNeedsWait,
+  aggregate,
+  latestDay,
   localEpochDay,
+  parseShared,
   validMinutes,
   type DailyLimitSettings,
 } from "../../lib/wellbeing/dailyLimit";
-import { parseTally } from "../../lib/wellbeing/useDailyLimit";
 import { setSettingValue, useAppSettingsStore } from "../../store/useAppSettingsStore";
 import { useDailyLimitStore } from "../../store/useDailyLimitStore";
+import { DailyLimitDevices } from "./DailyLimitDevices";
 import { Button } from "../ui/Button";
 import { InfoDialog } from "../ui/InfoDialog";
 import { Select } from "../ui/Select";
@@ -68,9 +71,10 @@ export function DailyLimitRows() {
     countMusic: values[SETTINGS.DAILY_LIMIT_MUSIC] === "true",
   };
   const [pending, setPending] = useState<DailyLimitSettings | null>(null);
+  const latest = latestDay(parseShared(values[SETTINGS.DAILY_TALLY]));
 
   const change = (next: DailyLimitSettings) => {
-    const tally = liveTally ?? parseTally(values[SETTINGS.DAILY_TALLY]);
+    const tally = liveTally ?? (latest === null ? null : aggregate(parseShared(values[SETTINGS.DAILY_TALLY]), latest));
     if (changeNeedsWait(current, next, tally, localEpochDay(Date.now()))) setPending(next);
     else write(next);
   };
@@ -97,6 +101,7 @@ export function DailyLimitRows() {
           <ToggleSwitch checked={current.countMusic} onChange={(countMusic) => change({ ...current, countMusic })} />
         </SettingItem>
       )}
+      {current.enabled && <DailyLimitDevices />}
       {current.enabled && <p className="px-1 pb-2 text-xs text-chrome-neutral-400">{getString("daily_limit_footer")}</p>}
       {pending && (
         <WaitDialog

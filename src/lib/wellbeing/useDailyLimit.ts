@@ -1,22 +1,27 @@
 import { useEffect } from "react";
 
+import { getSetting } from "../api/db";
 import { setSettingValue, useAppSettingsStore } from "../../store/useAppSettingsStore";
 import { useDailyLimitStore } from "../../store/useDailyLimitStore";
 import { useMusicPlayerStore } from "../../store/useMusicPlayerStore";
 import { usePlayerStore } from "../../store/usePlayerStore";
 import { showDownloadNotification } from "../api/downloads";
 import { getString } from "../i18n/index";
+import { IS_LINUX_RUNTIME, IS_MACOS_RUNTIME } from "../platform";
 import { SETTINGS } from "../settings/schema";
 import {
   WAIT_MS,
   addPlayed,
-  emptyTally,
+  encodeShared,
+  extend,
   isUsedUp,
   localEpochDay,
+  mergeShared,
+  parseShared,
   rollover,
   shouldWarn,
   validMinutes,
-  type DailyTally,
+  withOwn,
 } from "./dailyLimit";
 
 const TICK_MS = 1_000;
@@ -24,28 +29,50 @@ const TICK_MS = 1_000;
 const MAX_COUNTED_GAP_MS = 3_000;
 /** The count is saved this often while it changes, and at once when something happens. */
 const SAVE_EVERY_MS = 10_000;
+/** The saved count is read back this often, to pick up what another device sent. */
+const REFRESH_EVERY_MS = 15_000;
 
-/** Reads the saved count; anything unreadable is a fresh day. */
-export function parseTally(raw: string | undefined): DailyTally | null {
-  if (!raw) return null;
-  try {
-    const value = JSON.parse(raw) as Partial<DailyTally>;
-    if (typeof value.day !== "number" || typeof value.playedMs !== "number") return null;
-    return {
-      day: value.day,
-      playedMs: Math.max(0, value.playedMs),
-      extraMs: Math.max(0, Number(value.extraMs ?? 0)),
-      warned: value.warned === true,
-      reached: value.reached === true,
-    };
-  } catch {
-    return null;
-  }
+/** What this computer is called in the list of devices. */
+export function deviceLabel(): string {
+  if (IS_MACOS_RUNTIME) return "Mac";
+  if (IS_LINUX_RUNTIME) return "Linux PC";
+  return "Windows PC";
 }
 
-export function saveTally(tally: DailyTally): void {
-  useDailyLimitStore.getState().setTally(tally);
-  void setSettingValue(SETTINGS.DAILY_TALLY, JSON.stringify(tally));
+/** This device's id in the shared count: made once, kept in this device's own settings, never synced. */
+async function ensureOwnId(): Promise<string> {
+  const known = useDailyLimitStore.getState().ownId;
+  if (known) return known;
+  let id = await getSetting(SETTINGS.DAILY_LIMIT_DEVICE);
+  if (!id) {
+    id = globalThis.crypto.randomUUID().slice(0, 8);
+    await setSettingValue(SETTINGS.DAILY_LIMIT_DEVICE, id);
+  }
+  useDailyLimitStore.getState().setOwnId(id);
+  return id;
+}
+
+/**
+ * Saves the shared count with what was saved meanwhile merged in. Another device's count arrives by sync into the
+ * saved text, so it is read back here every time and never lost to this device's copy.
+ */
+export async function persistShared(): Promise<void> {
+  const store = useDailyLimitStore.getState();
+  const saved = parseShared(await getSetting(SETTINGS.DAILY_TALLY));
+  const merged = mergeShared(saved, store.shared);
+  useDailyLimitStore.getState().setShared(merged);
+  const text = encodeShared(merged);
+  if (text !== encodeShared(saved)) await setSettingValue(SETTINGS.DAILY_TALLY, text);
+}
+
+/** Keep watching: exactly fifteen more minutes from now, for the limit of all devices together. */
+export async function keepWatching(minutes: number): Promise<void> {
+  const ownId = await ensureOwnId();
+  await persistShared();
+  const { shared, tally } = useDailyLimitStore.getState();
+  if (!tally) return;
+  useDailyLimitStore.getState().setShared(withOwn(shared, ownId, deviceLabel(), extend(minutes, tally)));
+  await persistShared();
 }
 
 /** Whether a video is playing: the video player, or a Short (its video element carries `data-watch-time`). */
@@ -76,65 +103,89 @@ function notify(): void {
   );
 }
 
-/** The daily limit: counts the time that plays, warns five minutes before the end, and pauses at the end. */
+/** The daily limit: counts the time that plays on this device, adds the other devices' time, warns five minutes before the end, and pauses at the end. */
 export function useDailyLimit() {
   const enabled = useAppSettingsStore((s) => s.values[SETTINGS.DAILY_LIMIT] === "true");
 
   useEffect(() => {
     if (!enabled) return;
+    let cancelled = false;
+    let ownId = "";
+    let ready = false;
     let last = Date.now();
     let lastSaved = 0;
+    let lastRefresh = Date.now();
     let dirty = false;
+    let busy = false;
 
-    const timer = setInterval(() => {
+    void (async () => {
+      ownId = await ensureOwnId();
+      const saved = parseShared(await getSetting(SETTINGS.DAILY_TALLY));
+      const store = useDailyLimitStore.getState();
+      store.setShared(mergeShared(saved, store.shared));
+      if (!cancelled) ready = true;
+    })();
+
+    const tick = async () => {
       const now = Date.now();
       const elapsed = Math.min(now - last, MAX_COUNTED_GAP_MS);
       last = now;
+      if (!ready) return;
+
+      if (now - lastRefresh >= REFRESH_EVERY_MS) {
+        lastRefresh = now;
+        const saved = parseShared(await getSetting(SETTINGS.DAILY_TALLY));
+        const known = useDailyLimitStore.getState();
+        known.setShared(mergeShared(saved, known.shared));
+      }
 
       const values = useAppSettingsStore.getState().values;
       const minutes = validMinutes(Number(values[SETTINGS.DAILY_LIMIT_MINUTES]));
       const countMusic = values[SETTINGS.DAILY_LIMIT_MUSIC] === "true";
       const state = useDailyLimitStore.getState();
-      const today = localEpochDay(now);
-      let tally = rollover(state.tally ?? parseTally(values[SETTINGS.DAILY_TALLY]), today);
-      if (tally !== state.tally) {
-        state.setTally(tally);
-        dirty = true;
-      }
+      const base = rollover(state.tally, localEpochDay(now));
+      if (base !== state.tally) dirty = true;
 
       const counting = videoPlaying() || (countMusic && musicPlaying());
-      if (counting) {
-        tally = addPlayed(tally, elapsed);
-        dirty = true;
-      }
+      let view = counting ? addPlayed(base, elapsed) : base;
+      if (counting) dirty = true;
 
       let urgent = false;
-      if (shouldWarn(minutes, tally)) {
-        tally = { ...tally, warned: true };
+      if (shouldWarn(minutes, view)) {
+        view = { ...view, warned: true };
         urgent = true;
         notify();
       }
-      if (counting && isUsedUp(minutes, tally)) {
-        tally = { ...tally, reached: true };
+      if (counting && isUsedUp(minutes, view)) {
+        view = { ...view, reached: true };
         urgent = true;
         pauseAllPlayback();
         if (!state.dialogOpen) state.openDialog(now + WAIT_MS);
       }
 
-      if (dirty && (urgent || now - lastSaved >= SAVE_EVERY_MS)) {
-        saveTally(tally);
+      if (dirty || urgent) {
+        useDailyLimitStore.getState().setShared(withOwn(state.shared, ownId, deviceLabel(), view));
+      }
+      if (urgent || (dirty && now - lastSaved >= SAVE_EVERY_MS)) {
+        await persistShared();
         lastSaved = now;
         dirty = false;
-      } else if (dirty) {
-        state.setTally(tally);
       }
+    };
+
+    const timer = setInterval(() => {
+      if (busy) return;
+      busy = true;
+      void tick()
+        .catch((error) => console.warn("Daily limit tick failed", error))
+        .finally(() => {
+          busy = false;
+        });
     }, TICK_MS);
 
-    return () => clearInterval(timer);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, [enabled]);
-}
-
-/** A tally for today with nothing counted, for a fresh start. */
-export function freshTally(now = Date.now()): DailyTally {
-  return emptyTally(localEpochDay(now));
 }
