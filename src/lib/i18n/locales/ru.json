@@ -3716,5 +3716,7 @@
   "daily_limit_today_total": "Сегодня на всех ваших устройствах: %1$s из %2$s",
   "daily_limit_left": "Осталось %s",
   "daily_limit_device_own": "%s (это устройство)",
-  "daily_limit_device_unnamed": "Другое устройство"
+  "daily_limit_device_unnamed": "Другое устройство",
+  "watch_time_devices_title": "На этой неделе по устройствам",
+  "top_channels_all_devices": "Все ваши устройства вместе"
 }

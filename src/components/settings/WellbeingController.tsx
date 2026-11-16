@@ -1,3 +1,4 @@
+import { usePublishStats } from "../../lib/wellbeing/useCombinedStats";
 import { useDailyLimit } from "../../lib/wellbeing/useDailyLimit";
 import { useWellbeingReminders } from "../../lib/wellbeing/useWellbeingReminders";
 import { DailyLimitDialog } from "./DailyLimitDialog";
@@ -6,5 +7,6 @@ import { DailyLimitDialog } from "./DailyLimitDialog";
 export function WellbeingController() {
   useWellbeingReminders();
   useDailyLimit();
+  usePublishStats();
   return <DailyLimitDialog />;
 }

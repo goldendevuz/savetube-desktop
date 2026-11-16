@@ -559,6 +559,13 @@ async fn apply_settings(
         .iter()
         .filter_map(|entry| entry.value.as_str().map(str::to_string))
         .collect();
+    let (stats, incoming): (Vec<SettingEntry>, Vec<SettingEntry>) = incoming
+        .into_iter()
+        .partition(|s| s.key == settings_map::WATCH_STATS_KEY);
+    let peer_stats: Vec<String> = stats
+        .iter()
+        .filter_map(|entry| entry.value.as_str().map(str::to_string))
+        .collect();
 
     let mut local: Vec<SettingEntry> = Vec::new();
     for key in settings_map::desktop_keys() {
@@ -597,6 +604,13 @@ async fn apply_settings(
         if let Some(value) = settings_map::merge_daily_time(current.as_deref(), &theirs) {
             // Stamped now, so the merged counts reach the other devices as the newest copy.
             write_setting(tx, settings_map::DAILY_TALLY_KEY, &value, now_ms()).await?;
+        }
+    }
+    if !peer_stats.is_empty() {
+        let current = get_setting(tx, settings_map::WATCH_STATS_KEY).await?;
+        let theirs: Vec<&str> = peer_stats.iter().map(String::as_str).collect();
+        if let Some(value) = settings_map::merge_watch_stats(current.as_deref(), &theirs) {
+            write_setting(tx, settings_map::WATCH_STATS_KEY, &value, now_ms()).await?;
         }
     }
     // The nine SponsorBlock actions share one desktop setting, written once with the newest stamp.

@@ -1,11 +1,12 @@
 import { getString } from "../../lib/i18n/index";
 import { spentTimeLabel } from "../../lib/recap/recapFormat";
-import { percentLabel, useTopChannels } from "../../lib/wellbeing/useTopChannels";
+import { useCombinedStats } from "../../lib/wellbeing/useCombinedStats";
+import { percentLabel } from "../../lib/wellbeing/useTopChannels";
 import { Button } from "../ui/Button";
 
 /** The channels this month's watching went to, with a bar each, and the share that was Shorts. */
 export function TopChannelsCard() {
-  const { data, failed, retry } = useTopChannels();
+  const { stats: data, failed, retry } = useCombinedStats();
 
   if (failed) {
     return (
@@ -17,7 +18,7 @@ export function TopChannelsCard() {
   }
   if (!data) return <div className="h-40 animate-pulse" />;
 
-  const longest = data.channels[0]?.durationMs ?? 0;
+  const longest = data.channels[0]?.ms ?? 0;
   return (
     <div className="flex flex-col gap-3 px-5 py-4">
       <div className="text-sm text-on-surface-variant">{getString("top_channels_month_title")}</div>
@@ -32,12 +33,12 @@ export function TopChannelsCard() {
                   <span className="me-2 tabular-nums text-on-surface-variant">{index + 1}</span>
                   {channel.name}
                 </span>
-                <span className="shrink-0 text-sm tabular-nums text-on-surface-variant">{spentTimeLabel(channel.durationMs)}</span>
+                <span className="shrink-0 text-sm tabular-nums text-on-surface-variant">{spentTimeLabel(channel.ms)}</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high">
                 <div
                   className="h-full rounded-full bg-[var(--color-primary)]"
-                  style={{ width: `${longest > 0 ? Math.max(4, Math.round((channel.durationMs / longest) * 100)) : 0}%` }}
+                  style={{ width: `${longest > 0 ? Math.max(4, Math.round((channel.ms / longest) * 100)) : 0}%` }}
                 />
               </div>
             </li>

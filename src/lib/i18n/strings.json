@@ -3716,5 +3716,7 @@
   "daily_limit_today_total": "Today on all your devices: %1$s of %2$s",
   "daily_limit_left": "%s left",
   "daily_limit_device_own": "%s (this device)",
-  "daily_limit_device_unnamed": "Another device"
+  "daily_limit_device_unnamed": "Another device",
+  "watch_time_devices_title": "By device this week",
+  "top_channels_all_devices": "All your devices together"
 }

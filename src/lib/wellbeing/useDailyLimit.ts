@@ -40,7 +40,7 @@ export function deviceLabel(): string {
 }
 
 /** This device's id in the shared count: made once, kept in this device's own settings, never synced. */
-async function ensureOwnId(): Promise<string> {
+export async function ensureOwnId(): Promise<string> {
   const known = useDailyLimitStore.getState().ownId;
   if (known) return known;
   let id = await getSetting(SETTINGS.DAILY_LIMIT_DEVICE);

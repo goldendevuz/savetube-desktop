@@ -3716,5 +3716,7 @@
   "daily_limit_today_total": "Bugun barcha qurilmalarda: %1$s / %2$s",
   "daily_limit_left": "%s qoldi",
   "daily_limit_device_own": "%s (shu qurilma)",
-  "daily_limit_device_unnamed": "Boshqa qurilma"
+  "daily_limit_device_unnamed": "Boshqa qurilma",
+  "watch_time_devices_title": "Bu hafta qurilmalar boʻyicha",
+  "top_channels_all_devices": "Barcha qurilmalaringiz birgalikda"
 }

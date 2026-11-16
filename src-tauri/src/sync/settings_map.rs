@@ -121,6 +121,8 @@ const SHARED: &[Shared] = &[
     shared("daily_limit_music", "daily_limit_music", Kind::Bool),
     // Each device's count of today, one JSON text. Merged on arrival, see `merge_daily_time`.
     shared("daily_time", DAILY_TALLY_KEY, Kind::Text),
+    // Each device's published watch statistics, one JSON text. Merged on arrival, see `merge_watch_stats`.
+    shared("watch_stats", WATCH_STATS_KEY, Kind::Text),
 ];
 
 /// Player, content and extension preferences only the desktop has. Download paths, proxy
@@ -322,6 +324,59 @@ pub fn merge_daily_time(current: Option<&str>, incoming: &[&str]) -> Option<Stri
         }
     }
     let after = encode_daily_time(&devices);
+    (after != before).then_some(after)
+}
+
+/// The desktop setting holding every device's published watch statistics; its wire name is the same.
+pub const WATCH_STATS_KEY: &str = "watch_stats";
+/// A device that has not published for this long (ms), counted from the newest publication, is dropped.
+const STATS_KEEP_MS: u64 = 45 * 24 * 60 * 60 * 1000;
+
+fn parse_watch_stats(raw: &str) -> BTreeMap<String, Value> {
+    match serde_json::from_str::<Value>(raw) {
+        Ok(Value::Object(devices)) => devices
+            .into_iter()
+            .filter(|(_, entry)| entry.get("u").and_then(Value::as_u64).is_some())
+            .collect(),
+        _ => BTreeMap::new(),
+    }
+}
+
+fn encode_watch_stats(devices: &BTreeMap<String, Value>) -> String {
+    let newest = devices
+        .values()
+        .filter_map(|entry| entry.get("u").and_then(Value::as_u64))
+        .max()
+        .unwrap_or(0);
+    let map: serde_json::Map<String, Value> = devices
+        .iter()
+        .filter(|(_, entry)| {
+            entry.get("u").and_then(Value::as_u64).unwrap_or(0) + STATS_KEEP_MS >= newest
+        })
+        .map(|(id, entry)| (id.clone(), entry.clone()))
+        .collect();
+    Value::Object(map).to_string()
+}
+
+/// The stored statistics of every device with the ones a peer sent merged in. A device only ever publishes its
+/// own entry, so for each device the newest publication (the larger `u`, in ms) stands. `None` when the merge
+/// changes nothing.
+#[must_use]
+pub fn merge_watch_stats(current: Option<&str>, incoming: &[&str]) -> Option<String> {
+    let mut devices = current.map(parse_watch_stats).unwrap_or_default();
+    let before = encode_watch_stats(&devices);
+    let published = |entry: &Value| entry.get("u").and_then(Value::as_u64).unwrap_or(0);
+    for raw in incoming {
+        for (id, entry) in parse_watch_stats(raw) {
+            let newer = devices
+                .get(&id)
+                .is_none_or(|known| published(&entry) > published(known));
+            if newer {
+                devices.insert(id, entry);
+            }
+        }
+    }
+    let after = encode_watch_stats(&devices);
     (after != before).then_some(after)
 }
 
@@ -616,6 +671,38 @@ mod tests {
         assert_eq!(
             normalize_wire_key(DAILY_TIME_WIRE).as_deref(),
             Some(DAILY_TIME_WIRE)
+        );
+    }
+
+    #[test]
+    fn the_newest_publication_of_each_device_stands() {
+        let ours = r#"{"phone":{"u":2000,"n":"Phone"},"laptop":{"u":5000,"n":"Laptop"}}"#;
+        let theirs = r#"{"phone":{"u":3000,"n":"Phone2"},"laptop":{"u":4000,"n":"Old"}}"#;
+        let merged = merge_watch_stats(Some(ours), &[theirs]).unwrap();
+        let parsed = parse_watch_stats(&merged);
+        assert_eq!(parsed["phone"]["n"], "Phone2");
+        assert_eq!(parsed["laptop"]["n"], "Laptop");
+        assert_eq!(merge_watch_stats(Some(&merged), &[ours, theirs]), None);
+    }
+
+    #[test]
+    fn a_device_not_heard_from_for_weeks_is_dropped_and_damaged_text_is_ignored() {
+        let ancient = r#"{"gone":{"u":1000},"here":{"u":9999999999}}"#;
+        let merged = merge_watch_stats(None, &[ancient]).unwrap();
+        let parsed = parse_watch_stats(&merged);
+        assert!(parsed.contains_key("here") && !parsed.contains_key("gone"));
+        assert!(merge_watch_stats(None, &["not json", "[]", r#"{"x":{"no":1}}"#]).is_none());
+    }
+
+    #[test]
+    fn the_statistics_travel_under_their_own_name() {
+        assert_eq!(
+            to_wire(WATCH_STATS_KEY, "{}"),
+            Some((WATCH_STATS_KEY.to_string(), json!("{}")))
+        );
+        assert_eq!(
+            normalize_wire_key("watch_stats").as_deref(),
+            Some("watch_stats")
         );
     }
 }

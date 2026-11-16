@@ -5,10 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const getRecapWeek = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/api/recap", () => ({ getRecapWeek }));
+vi.mock("../../lib/api/recap", () => ({
+  getRecapWeek,
+  getRecapSummary: async () => ({ video: { topChannels: [], formatMs: {} } }),
+}));
 vi.mock("../../lib/recap/recapQueue", () => ({ flushRecapQueue: async () => {} }));
+vi.mock("../../lib/api/db", () => ({ getSetting: async () => null }));
+vi.mock("../../store/useAppSettingsStore", () => ({ setSettingValue: async () => true }));
+vi.mock("../../lib/wellbeing/useDailyLimit", () => ({ ensureOwnId: async () => "me", deviceLabel: () => "Windows PC" }));
 
 const { WatchTimeCard } = await import("./WatchTimeCard");
+const { resetPublishedCache } = await import("../../lib/wellbeing/useCombinedStats");
 
 const HOUR = 3_600_000;
 const days = (values: number[]): [string, number][] => values.map((ms, index) => [`2026-09-0${index + 1}`, ms]);
@@ -21,6 +28,7 @@ async function open() {
 }
 
 beforeEach(() => {
+  resetPublishedCache();
   getRecapWeek.mockReset();
   host = document.createElement("div");
   root = createRoot(host);
