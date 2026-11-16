@@ -243,6 +243,9 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     { title: "settings_clear_search_history", summary: "settings_clear_search_history_desc" },
   ]),
   ...rows("wellbeing", [
+    { title: "daily_limit_title", summary: "daily_limit_subtitle", keywords: ["wellbeing", "screen time", "usage", "limit", "time"] },
+    { title: "daily_limit_time_title", summary: "daily_limit_time_description" },
+    { title: "daily_limit_music_title", summary: "daily_limit_music_subtitle" },
     { title: "bedtime_reminder_title", summary: "bedtime_reminder_subtitle", keywords: ["sleep", "wellbeing", "screen time"] },
     { title: "bedtime_start_title", summary: "bedtime_notification_note" },
     { title: "bedtime_end_title" },

@@ -114,6 +114,9 @@ const SHARED: &[Shared] = &[
     shared("home_hide_gaming", "home_hide_gaming", Kind::Bool),
     shared("home_languages", "home_languages", Kind::Text),
     shared("home_pin_fresh_subs", "home_pin_fresh_subs", Kind::Bool),
+    shared("daily_limit", "daily_limit", Kind::Bool),
+    shared("daily_limit_minutes", "daily_limit_minutes", Kind::Whole),
+    shared("daily_limit_music", "daily_limit_music", Kind::Bool),
 ];
 
 /// Player, content and extension preferences only the desktop has. Download paths, proxy
