@@ -682,6 +682,7 @@ export function ShortVideoSurface({
   return (
     <div className="relative h-full w-full">
       <video
+        data-watch-time
         ref={videoRef}
         crossOrigin="anonymous"
         poster={poster}

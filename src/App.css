@@ -1004,3 +1004,14 @@
 :root[data-app-font="system"] body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans Arabic", "Noto Naskh Arabic", sans-serif;
 }
+
+/* Focus options: the flags are set on <html> by useFocusModes. */
+:root[data-hide-thumbnails] [data-thumbnail] {
+  opacity: 0;
+}
+:root[data-blur-thumbnails] [data-thumbnail] {
+  filter: blur(18px);
+}
+:root[data-black-white] {
+  filter: grayscale(1);
+}

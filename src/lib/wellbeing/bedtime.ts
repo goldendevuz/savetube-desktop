@@ -1,3 +1,5 @@
+import { nextWallClockAt } from "./timeZone";
+
 /** Waking up long after bedtime isn't when to say it's bedtime. */
 const LATE_LIMIT_MS = 2 * 60 * 60_000;
 const DAY_MINUTES = 24 * 60;
@@ -10,10 +12,14 @@ function minutesOf(time: string): number | null {
   return hour < 24 && minute < 60 ? hour * 60 + minute : null;
 }
 
-/** The next time the clock reads `time` ("23:00") after `nowMs`; null for a time that isn't one. */
-export function nextBedtimeAt(time: string, nowMs: number): number | null {
+/**
+ * The next time the clock reads `time` ("23:00") after `nowMs`; null for a time that isn't one. With a `zone` it is that
+ * zone's clock, otherwise the computer's own.
+ */
+export function nextBedtimeAt(time: string, nowMs: number, zone?: string): number | null {
   const minutes = minutesOf(time);
   if (minutes === null) return null;
+  if (zone) return nextWallClockAt(zone, minutes, nowMs);
   const next = new Date(nowMs);
   next.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
   if (next.getTime() <= nowMs) next.setDate(next.getDate() + 1);

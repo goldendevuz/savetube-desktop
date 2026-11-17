@@ -53,6 +53,7 @@ export function UpNextCard({ video, secondsLeft, onCancel, onRestart, onPlayNow 
           <img
             src={proxiedImage(video.thumbnailUrl, proxyBase)}
             alt=""
+            data-thumbnail
             className="aspect-video w-24 shrink-0 rounded-lg object-cover"
           />
         )}

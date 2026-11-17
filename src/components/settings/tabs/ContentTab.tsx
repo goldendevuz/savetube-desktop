@@ -57,6 +57,12 @@ export function ContentTab() {
   const [shortsAutoScrollSeconds, setShortsAutoScrollSeconds] = useNumberPref(SETTINGS.SHORTS_AUTO_SCROLL_SECONDS, 10);
   const [musicNav, setMusicNav] = useBoolPref(SETTINGS.MUSIC_NAVIGATION_ENABLED, true);
   const [musicContent, setMusicContent] = useBoolPref(SETTINGS.MUSIC_CONTENT_ENABLED, true);
+  const [hideThumbnails, setHideThumbnails] = useBoolPref(SETTINGS.HIDE_THUMBNAILS, false);
+  const [blurThumbnails, setBlurThumbnails] = useBoolPref(SETTINGS.BLUR_THUMBNAILS, false);
+  const [hideTopBar, setHideTopBar] = useBoolPref(SETTINGS.HIDE_TOP_BAR, false);
+  const [disableEndCards, setDisableEndCards] = useBoolPref(SETTINGS.DISABLE_END_CARDS, false);
+  const [blackWhite, setBlackWhite] = useBoolPref(SETTINGS.BLACK_WHITE_MODE, false);
+  const [hideSubsNav, setHideSubsNav] = useBoolPref(SETTINGS.HIDE_SUBSCRIPTIONS_NAV, false);
   const [categoriesTab, setCategoriesTab] = useBoolPref(SETTINGS.CATEGORIES_NAV_TAB_ENABLED, false);
   const [homeMaxVideoAge, setHomeMaxVideoAge] = usePreference(SETTINGS.HOME_MAX_VIDEO_AGE, '0');
   const [homeMinViews, setHomeMinViews] = usePreference(SETTINGS.HOME_MIN_VIEWS, '0');
@@ -179,6 +185,15 @@ export function ContentTab() {
             { value: '1000000000', label: getString('settings_home_min_subscribers_1b') },
           ]} />
         </SettingItem>
+      </SettingsGroup>
+
+      <SettingsGroup title={getString('settings_group_focus')}>
+        <SettingItem title={getString('settings_hide_thumbnails')} description={getString('settings_hide_thumbnails_desc')}><ToggleSwitch checked={hideThumbnails} onChange={setHideThumbnails} /></SettingItem>
+        <SettingItem title={getString('settings_blur_thumbnails')} description={getString('settings_blur_thumbnails_desc')}><ToggleSwitch checked={blurThumbnails} onChange={setBlurThumbnails} /></SettingItem>
+        <SettingItem title={getString('settings_hide_top_bar')} description={getString('settings_hide_top_bar_desc')}><ToggleSwitch checked={hideTopBar} onChange={setHideTopBar} /></SettingItem>
+        <SettingItem title={getString('settings_disable_end_cards')} description={getString('settings_disable_end_cards_desc')}><ToggleSwitch checked={disableEndCards} onChange={setDisableEndCards} /></SettingItem>
+        <SettingItem title={getString('settings_hide_subscriptions_nav')} description={getString('settings_hide_subscriptions_nav_desc')}><ToggleSwitch checked={hideSubsNav} onChange={setHideSubsNav} /></SettingItem>
+        <SettingItem title={getString('settings_black_white_mode')} description={getString('settings_black_white_mode_desc')}><ToggleSwitch checked={blackWhite} onChange={setBlackWhite} /></SettingItem>
       </SettingsGroup>
 
       <SettingsGroup title={getString('settings_group_watch_page')}>

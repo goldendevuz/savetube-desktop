@@ -717,6 +717,7 @@ function VideoCardComponent({
           {displayThumbnail ? (
             <img
               ref={thumbnailRef}
+            data-thumbnail
               src={displayThumbnail}
               alt={displayTitle}
               className="h-full w-full object-cover"
@@ -824,6 +825,7 @@ function VideoCardComponent({
           {displayThumbnail ? (
             <img
               ref={thumbnailRef}
+            data-thumbnail
               src={displayThumbnail}
               alt={displayTitle}
               className="h-full w-full object-cover"
@@ -917,6 +919,7 @@ function VideoCardComponent({
         {displayThumbnail ? (
           <img
             ref={thumbnailRef}
+            data-thumbnail
             src={displayThumbnail}
             alt={displayTitle}
             className={`w-full h-full object-cover${IS_LINUX_RUNTIME ? "" : " transition-transform duration-300 group-hover:scale-[1.03]"}`}

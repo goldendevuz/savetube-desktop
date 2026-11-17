@@ -8,6 +8,7 @@ import { getString, type StringKey } from "../i18n/index";
 import { SETTINGS } from "../settings/schema";
 import { bedtimeState, nextBedtimeAt } from "./bedtime";
 import { BreakClock } from "./breakClock";
+import { zoneOrDefault } from "./timeZone";
 
 const TICK_MS = 15_000;
 /** A longer gap between ticks means the computer slept: that time wasn't spent in Flow. */
@@ -34,6 +35,7 @@ export function useWellbeingReminders() {
   const breakMinutes = Number(useAppSettingsStore((s) => s.values[SETTINGS.BREAK_FREQUENCY]) ?? "30");
   const bedtimeOn = useAppSettingsStore((s) => s.values[SETTINGS.BEDTIME_REMINDER] === "true");
   const bedtimeStart = useAppSettingsStore((s) => s.values[SETTINGS.BEDTIME_START]) ?? "23:00";
+  const zone = zoneOrDefault(useAppSettingsStore((s) => s.values[SETTINGS.TIME_ZONE]));
 
   useEffect(() => {
     if (!breakOn) return;
@@ -59,15 +61,15 @@ export function useWellbeingReminders() {
 
   useEffect(() => {
     if (!bedtimeOn) return;
-    let armedAt = nextBedtimeAt(bedtimeStart, Date.now());
+    let armedAt = nextBedtimeAt(bedtimeStart, Date.now(), zone);
     if (armedAt === null) return;
     const timer = setInterval(() => {
       const now = Date.now();
       const state = bedtimeState(armedAt!, now);
       if (state === "wait") return;
       if (state === "notify") notify("reminder_bedtime_title", "reminder_bedtime_body");
-      armedAt = nextBedtimeAt(bedtimeStart, now);
+      armedAt = nextBedtimeAt(bedtimeStart, now, zone);
     }, TICK_MS);
     return () => clearInterval(timer);
-  }, [bedtimeOn, bedtimeStart]);
+  }, [bedtimeOn, bedtimeStart, zone]);
 }

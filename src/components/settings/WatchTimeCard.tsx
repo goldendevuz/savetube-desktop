@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import { APP_LOCALE, getString } from "../../lib/i18n/index";
 import { localDate, spentTimeLabel } from "../../lib/recap/recapFormat";
-import { useWatchTimeWeek, weekIsEstimated, weekTotals } from "../../lib/wellbeing/useWatchTimeWeek";
+import { weekIsEstimated, weekTotals } from "../../lib/wellbeing/useWatchTimeWeek";
+import { useCombinedStats } from "../../lib/wellbeing/useCombinedStats";
 import { BarStrip } from "../recap/charts/BarStrip";
 import { Button } from "../ui/Button";
 
@@ -18,7 +19,8 @@ function dayName(day: string, days: string[]): string {
  * bar shows that day's time instead of the average, and choosing it again goes back.
  */
 export function WatchTimeCard() {
-  const { week, failed, retry } = useWatchTimeWeek();
+  const { stats, failed, retry } = useCombinedStats();
+  const week = stats?.week ?? null;
   const [selected, setSelected] = useState<number | null>(null);
 
   if (failed) {
@@ -62,6 +64,22 @@ export function WatchTimeCard() {
           ariaLabel={dates.map((day, index) => `${dayName(day, dates)} ${spentTimeLabel(values[index] ?? 0)}`).join(", ")}
           onSelect={(index) => setSelected((current) => (current === index ? null : index))}
         />
+      )}
+      {stats && stats.devices.length > 1 && (
+        <div className="mt-3 flex flex-col gap-1">
+          <div className="text-xs text-on-surface-variant">{getString("watch_time_devices_title")}</div>
+          {stats.devices.map((device) => {
+            const name = device.name || getString("daily_limit_device_unnamed");
+            return (
+              <div key={device.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate text-on-surface-variant">
+                  {device.own ? getString("daily_limit_device_own", name) : name}
+                </span>
+                <span className="shrink-0 tabular-nums text-on-surface">{spentTimeLabel(device.ms)}</span>
+              </div>
+            );
+          })}
+        </div>
       )}
       {weekIsEstimated(week) && <p className="text-xs text-on-surface-variant">{getString("stats_disclaimer")}</p>}
     </div>

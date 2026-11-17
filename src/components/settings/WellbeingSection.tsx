@@ -3,10 +3,13 @@ import { spentTimeLabel } from "../../lib/recap/recapFormat";
 import { SETTINGS } from "../../lib/settings/schema";
 import { useBoolPref, usePreference } from "../../lib/usePreference";
 import { sleepWindowMs } from "../../lib/wellbeing/bedtime";
+import { selectableZones, zoneLabel, zoneOrDefault } from "../../lib/wellbeing/timeZone";
 import { Select } from "../ui/Select";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { SettingItem } from "./SettingItem";
 import { SettingsGroup } from "./SettingsGroup";
+import { DailyLimitRows } from "./DailyLimitRows";
+import { TopChannelsCard } from "./TopChannelsCard";
 import { WatchTimeCard } from "./WatchTimeCard";
 
 const BREAK_FREQUENCIES = ["5", "10", "15", "20", "30", "45", "60", "90", "120"];
@@ -32,11 +35,22 @@ export function WellbeingSection() {
   const [bedtimeEnd, setBedtimeEnd] = usePreference(SETTINGS.BEDTIME_END, "07:00");
   const [breakOn, setBreakOn] = useBoolPref(SETTINGS.BREAK_REMINDER, false);
   const [breakFrequency, setBreakFrequency] = usePreference(SETTINGS.BREAK_FREQUENCY, "30");
+  const [zoneChoice, setZone] = usePreference(SETTINGS.TIME_ZONE, "Asia/Tashkent");
+  const zone = zoneOrDefault(zoneChoice);
   const sleepMs = sleepWindowMs(bedtimeStart, bedtimeEnd);
 
   return (
     <SettingsGroup title={getString("settings_group_wellbeing")}>
       <WatchTimeCard />
+      <TopChannelsCard />
+      <SettingItem title={getString("time_zone_title")} description={getString("time_zone_description")}>
+        <Select
+          value={zone}
+          onChange={setZone}
+          options={selectableZones().map((name) => ({ value: name, label: zoneLabel(name) }))}
+        />
+      </SettingItem>
+      <DailyLimitRows />
       <SettingItem
         title={getString("bedtime_reminder_title")}
         description={

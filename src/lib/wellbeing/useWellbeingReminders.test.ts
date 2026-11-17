@@ -104,6 +104,11 @@ describe("the break reminder", () => {
 });
 
 describe("the bedtime reminder", () => {
+  // The bedtime clock follows the time zone setting, Tashkent unless chosen: 12:00 there is 07:00 UTC.
+  beforeEach(() => {
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 14, 7, 0)));
+  });
+
   it("fires once at its time, and again the next day while Flow runs", () => {
     settings.values = { [SETTINGS.BEDTIME_REMINDER]: "true", [SETTINGS.BEDTIME_START]: "23:00" };
     mount();

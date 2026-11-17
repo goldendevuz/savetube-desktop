@@ -11,7 +11,9 @@
 //! freezes video on a desktop or phone without that hardware decoder. `skip_silence` stays out
 //! because the desktop has no such setting.
 
-use serde_json::Value;
+use std::collections::BTreeMap;
+
+use serde_json::{Value, json};
 
 use crate::sync::canonical::{Hlc, SettingEntry};
 use crate::sync::mapping::iso_to_ms;
@@ -114,6 +116,14 @@ const SHARED: &[Shared] = &[
     shared("home_hide_gaming", "home_hide_gaming", Kind::Bool),
     shared("home_languages", "home_languages", Kind::Text),
     shared("home_pin_fresh_subs", "home_pin_fresh_subs", Kind::Bool),
+    shared("daily_limit", "daily_limit", Kind::Bool),
+    shared("daily_limit_minutes", "daily_limit_minutes", Kind::Whole),
+    shared("daily_limit_music", "daily_limit_music", Kind::Bool),
+    shared("time_zone", "time_zone", Kind::Text),
+    // Each device's count of today, one JSON text. Merged on arrival, see `merge_daily_time`.
+    shared("daily_time", DAILY_TALLY_KEY, Kind::Text),
+    // Each device's published watch statistics, one JSON text. Merged on arrival, see `merge_watch_stats`.
+    shared("watch_stats", WATCH_STATS_KEY, Kind::Text),
 ];
 
 /// Player, content and extension preferences only the desktop has. Download paths, proxy
@@ -181,6 +191,12 @@ const DESKTOP_ONLY: &[&str] = &[
     "music_navigation_enabled",
     "music_content_enabled",
     "categories_nav_tab_enabled",
+    "hide_thumbnails",
+    "blur_thumbnails",
+    "hide_top_bar",
+    "disable_end_cards",
+    "black_white_mode",
+    "hide_subscriptions_nav",
     "subscription_refresh_on_startup",
     "subscription_collaborations_enabled",
     "subs_sort_mode",
@@ -220,6 +236,156 @@ const SB_ACTIONS: [(&str, &str); 7] = [
     ("ignore", "IGNORE"),
     ("disabled", "DISABLED"),
 ];
+
+/// The desktop setting holding every device's count of today.
+pub const DAILY_TALLY_KEY: &str = "daily_tally";
+/// Its name on the wire, the same on Android.
+pub const DAILY_TIME_WIRE: &str = "daily_time";
+/// Counts of days further back than this, from the newest, are dropped.
+const DAILY_KEEP_DAYS: i64 = 7;
+
+/// What one device counted on one day.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DeviceCount {
+    /// What the device is called in the lists ("Windows PC", "SM-A515F"); may be empty.
+    name: String,
+    day: i64,
+    played_ms: u64,
+    extra_ms: u64,
+    reached: bool,
+    warned: bool,
+}
+
+fn parse_daily_time(raw: &str) -> BTreeMap<String, DeviceCount> {
+    let Ok(Value::Object(devices)) = serde_json::from_str::<Value>(raw) else {
+        return BTreeMap::new();
+    };
+    devices
+        .iter()
+        .filter_map(|(id, value)| {
+            let entry = value.as_object()?;
+            let day = entry.get("d")?.as_i64()?;
+            let number = |key: &str| entry.get(key).and_then(Value::as_u64).unwrap_or(0);
+            let flag = |key: &str| entry.get(key).and_then(Value::as_bool).unwrap_or(false);
+            Some((
+                id.clone(),
+                DeviceCount {
+                    name: entry
+                        .get("n")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string(),
+                    day,
+                    played_ms: number("p"),
+                    extra_ms: number("x"),
+                    reached: flag("r"),
+                    warned: flag("w"),
+                },
+            ))
+        })
+        .collect()
+}
+
+fn encode_daily_time(devices: &BTreeMap<String, DeviceCount>) -> String {
+    let newest = devices.values().map(|c| c.day).max().unwrap_or(0);
+    let map: serde_json::Map<String, Value> = devices
+        .iter()
+        .filter(|(_, c)| c.day >= newest - DAILY_KEEP_DAYS)
+        .map(|(id, c)| {
+            (
+                id.clone(),
+                json!({ "n": c.name, "d": c.day, "p": c.played_ms, "x": c.extra_ms, "r": c.reached, "w": c.warned }),
+            )
+        })
+        .collect();
+    Value::Object(map).to_string()
+}
+
+/// One device's count from two copies: the later day wins; on the same day the larger count and either flag.
+fn merge_device_count(a: DeviceCount, b: DeviceCount) -> DeviceCount {
+    if a.day != b.day {
+        return if a.day > b.day { a } else { b };
+    }
+    DeviceCount {
+        name: if a.name.is_empty() { b.name } else { a.name },
+        day: a.day,
+        played_ms: a.played_ms.max(b.played_ms),
+        extra_ms: a.extra_ms.max(b.extra_ms),
+        reached: a.reached || b.reached,
+        warned: a.warned || b.warned,
+    }
+}
+
+/// The stored counts of every device with the counts a peer sent merged in. Every device only changes its own
+/// entry, so merging never adds time twice. `None` when the merge changes nothing.
+#[must_use]
+pub fn merge_daily_time(current: Option<&str>, incoming: &[&str]) -> Option<String> {
+    let mut devices = current.map(parse_daily_time).unwrap_or_default();
+    let before = encode_daily_time(&devices);
+    for raw in incoming {
+        for (id, count) in parse_daily_time(raw) {
+            devices
+                .entry(id)
+                .and_modify(|own| *own = merge_device_count(own.clone(), count.clone()))
+                .or_insert(count);
+        }
+    }
+    let after = encode_daily_time(&devices);
+    (after != before).then_some(after)
+}
+
+/// The desktop setting holding every device's published watch statistics; its wire name is the same.
+pub const WATCH_STATS_KEY: &str = "watch_stats";
+/// A device that has not published for this long (ms), counted from the newest publication, is dropped.
+const STATS_KEEP_MS: u64 = 45 * 24 * 60 * 60 * 1000;
+
+fn parse_watch_stats(raw: &str) -> BTreeMap<String, Value> {
+    match serde_json::from_str::<Value>(raw) {
+        Ok(Value::Object(devices)) => devices
+            .into_iter()
+            .filter(|(_, entry)| entry.get("u").and_then(Value::as_u64).is_some())
+            .collect(),
+        _ => BTreeMap::new(),
+    }
+}
+
+fn encode_watch_stats(devices: &BTreeMap<String, Value>) -> String {
+    let newest = devices
+        .values()
+        .filter_map(|entry| entry.get("u").and_then(Value::as_u64))
+        .max()
+        .unwrap_or(0);
+    let map: serde_json::Map<String, Value> = devices
+        .iter()
+        .filter(|(_, entry)| {
+            entry.get("u").and_then(Value::as_u64).unwrap_or(0) + STATS_KEEP_MS >= newest
+        })
+        .map(|(id, entry)| (id.clone(), entry.clone()))
+        .collect();
+    Value::Object(map).to_string()
+}
+
+/// The stored statistics of every device with the ones a peer sent merged in. A device only ever publishes its
+/// own entry, so for each device the newest publication (the larger `u`, in ms) stands. `None` when the merge
+/// changes nothing.
+#[must_use]
+pub fn merge_watch_stats(current: Option<&str>, incoming: &[&str]) -> Option<String> {
+    let mut devices = current.map(parse_watch_stats).unwrap_or_default();
+    let before = encode_watch_stats(&devices);
+    let published = |entry: &Value| entry.get("u").and_then(Value::as_u64).unwrap_or(0);
+    for raw in incoming {
+        for (id, entry) in parse_watch_stats(raw) {
+            let newer = devices
+                .get(&id)
+                .is_none_or(|known| published(&entry) > published(known));
+            if newer {
+                devices.insert(id, entry);
+            }
+        }
+    }
+    let after = encode_watch_stats(&devices);
+    (after != before).then_some(after)
+}
 
 const DESKTOP_PREFIX: &str = "desktop.";
 
@@ -465,5 +631,85 @@ mod tests {
     fn the_autoplay_delay_stays_among_desktops() {
         let (key, _) = to_wire("autoplay_countdown_seconds", "5").unwrap();
         assert_eq!(key, "desktop.autoplay_countdown_seconds");
+    }
+
+    #[test]
+    fn counts_of_two_devices_merge_without_adding_time_twice() {
+        let phone = r#"{"phone":{"d":10,"p":1800000,"x":0,"r":false,"w":false}}"#;
+        let laptop = r#"{"laptop":{"d":10,"p":600000,"x":900000,"r":true,"w":true}}"#;
+        let merged = merge_daily_time(Some(phone), &[laptop]).unwrap();
+        let parsed = parse_daily_time(&merged);
+        assert_eq!(parsed["phone"].played_ms, 1_800_000);
+        assert_eq!(parsed["laptop"].played_ms, 600_000);
+        assert!(parsed["laptop"].reached && parsed["laptop"].warned);
+        // The same counts again change nothing.
+        assert_eq!(merge_daily_time(Some(&merged), &[phone, laptop]), None);
+    }
+
+    #[test]
+    fn a_device_keeps_its_larger_count_and_a_later_day_replaces_an_earlier_one() {
+        let ours = r#"{"phone":{"d":10,"p":3000000,"x":0,"r":false,"w":false}}"#;
+        let older = r#"{"phone":{"d":10,"p":1000000,"x":0,"r":false,"w":false}}"#;
+        assert_eq!(merge_daily_time(Some(ours), &[older]), None);
+        let next_day = r#"{"phone":{"d":11,"p":60000,"x":0,"r":false,"w":false}}"#;
+        let merged = merge_daily_time(Some(ours), &[next_day]).unwrap();
+        let parsed = parse_daily_time(&merged);
+        assert_eq!(
+            (parsed["phone"].day, parsed["phone"].played_ms),
+            (11, 60_000)
+        );
+    }
+
+    #[test]
+    fn an_old_or_damaged_value_is_replaced_by_what_a_peer_sent() {
+        let peer = r#"{"phone":{"d":10,"p":5,"x":0,"r":false,"w":false}}"#;
+        let legacy = r#"{"day":10,"playedMs":0,"extraMs":0,"warned":false,"reached":false}"#;
+        assert!(merge_daily_time(Some(legacy), &[peer]).is_some());
+        assert!(merge_daily_time(None, &["not json"]).is_none());
+        assert!(merge_daily_time(None, &[peer]).is_some());
+    }
+
+    #[test]
+    fn the_count_travels_under_its_wire_name() {
+        assert_eq!(
+            to_wire(DAILY_TALLY_KEY, "{}"),
+            Some((DAILY_TIME_WIRE.to_string(), json!("{}")))
+        );
+        assert_eq!(
+            normalize_wire_key(DAILY_TIME_WIRE).as_deref(),
+            Some(DAILY_TIME_WIRE)
+        );
+    }
+
+    #[test]
+    fn the_newest_publication_of_each_device_stands() {
+        let ours = r#"{"phone":{"u":2000,"n":"Phone"},"laptop":{"u":5000,"n":"Laptop"}}"#;
+        let theirs = r#"{"phone":{"u":3000,"n":"Phone2"},"laptop":{"u":4000,"n":"Old"}}"#;
+        let merged = merge_watch_stats(Some(ours), &[theirs]).unwrap();
+        let parsed = parse_watch_stats(&merged);
+        assert_eq!(parsed["phone"]["n"], "Phone2");
+        assert_eq!(parsed["laptop"]["n"], "Laptop");
+        assert_eq!(merge_watch_stats(Some(&merged), &[ours, theirs]), None);
+    }
+
+    #[test]
+    fn a_device_not_heard_from_for_weeks_is_dropped_and_damaged_text_is_ignored() {
+        let ancient = r#"{"gone":{"u":1000},"here":{"u":9999999999}}"#;
+        let merged = merge_watch_stats(None, &[ancient]).unwrap();
+        let parsed = parse_watch_stats(&merged);
+        assert!(parsed.contains_key("here") && !parsed.contains_key("gone"));
+        assert!(merge_watch_stats(None, &["not json", "[]", r#"{"x":{"no":1}}"#]).is_none());
+    }
+
+    #[test]
+    fn the_statistics_travel_under_their_own_name() {
+        assert_eq!(
+            to_wire(WATCH_STATS_KEY, "{}"),
+            Some((WATCH_STATS_KEY.to_string(), json!("{}")))
+        );
+        assert_eq!(
+            normalize_wire_key("watch_stats").as_deref(),
+            Some("watch_stats")
+        );
     }
 }

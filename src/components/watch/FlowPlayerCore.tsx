@@ -59,6 +59,7 @@ export function FlowPlayerCore({ videoId, videoDetails, onEnded }: FlowPlayerCor
   const setIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playNext = usePlayerStore((s) => s.playNext);
   const repeatMode = usePlayerStore((s) => s.repeatMode);
+  const endCardsOff = useAppSettingsStore((s) => s.values[SETTINGS.DISABLE_END_CARDS] === "true");
   const autoplayEnabled = useAppSettingsStore((s) => s.values[SETTINGS.AUTOPLAY_ENABLED] !== "false");
   const queueAutoplayEnabled = useAppSettingsStore((s) => s.values[SETTINGS.QUEUE_AUTOPLAY_ENABLED] !== "false");
   const autoplayDelaySeconds = useAppSettingsStore((s) => Number(s.values[SETTINGS.AUTOPLAY_COUNTDOWN_SECONDS] ?? 0));
@@ -383,7 +384,7 @@ export function FlowPlayerCore({ videoId, videoDetails, onEnded }: FlowPlayerCor
         )
       }
       overlay={
-        countdown && (
+        countdown && !endCardsOff && (
           <UpNextCard
             video={countdown.next}
             secondsLeft={countdown.secondsLeft}

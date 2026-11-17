@@ -3,6 +3,8 @@ import { getString } from '../../lib/i18n/index';
 import { Topbar } from './Topbar';
 import { Sidebar } from './Sidebar';
 import { NavigationType, Outlet, useLocation, useNavigationType } from 'react-router-dom';
+import { SETTINGS } from '../../lib/settings/schema';
+import { useAppSettingsStore } from '../../store/useAppSettingsStore';
 import { useUiStore } from '../../store/useUiStore';
 import { ScrollContainerContext } from '../../lib/useScrollContainer';
 import { usePageEnterMotion } from '../../lib/usePageEnterMotion';
@@ -10,6 +12,7 @@ import { SIDEBAR_MENU_BUTTON_ID } from './Topbar';
 import { recalledScroll, rememberScroll, restoreScroll } from '../../lib/tabs/scrollMemory';
 
 export function PageWrapper() {
+  const hideTopBar = useAppSettingsStore((s) => s.values[SETTINGS.HIDE_TOP_BAR] === 'true');
   const location = useLocation();
   const navigationType = useNavigationType();
   // Per-field, not a bare `useUiStore()`: the store also carries `searchQuery`,
@@ -84,7 +87,7 @@ export function PageWrapper() {
 
   return (
     <div className="flex h-full flex-col bg-background text-chrome-zinc-100 overflow-hidden font-sans">
-      <Topbar />
+      {!hideTopBar && <Topbar />}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main

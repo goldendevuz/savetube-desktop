@@ -65,6 +65,7 @@ export function Sidebar({ mode = 'normal' }: SidebarProps) {
   const musicEnabled = useMusicEnabled();
   const musicNavEnabled = useAppSettingsStore((state) => state.values[SETTINGS.MUSIC_NAVIGATION_ENABLED] !== 'false');
   const showMusicNav = musicEnabled && musicNavEnabled;
+  const hideSubsNav = useAppSettingsStore((state) => state.values[SETTINGS.HIDE_SUBSCRIPTIONS_NAV] === 'true');
   const showCategoriesNav = useAppSettingsStore((state) => state.values[SETTINGS.CATEGORIES_NAV_TAB_ENABLED] !== 'false');
   const notesEnabled = useNotesEnabled();
 
@@ -117,7 +118,7 @@ export function Sidebar({ mode = 'normal' }: SidebarProps) {
 
           <div className="sidebar-when-expanded [grid-area:1/1]">
             {divider}
-            <section>
+            {!hideSubsNav && <section>
               <SectionHeader
                 label={getString('sidebar_subscriptions')}
                 to="/subscriptions"
@@ -133,7 +134,7 @@ export function Sidebar({ mode = 'normal' }: SidebarProps) {
                   closeOverlay={closeOverlay}
                 />
               )}
-            </section>
+            </section>}
 
             {divider}
 
