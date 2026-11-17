@@ -197,6 +197,7 @@ export function ShortCard({ short, queue, variant = "grid", finiteQueue = false 
             <img
               src={toSrc(short.thumbnailUrl)}
               alt={title}
+              data-thumbnail
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               loading="lazy"
             />
