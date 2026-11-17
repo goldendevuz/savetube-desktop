@@ -2174,6 +2174,14 @@ export const Player: React.FC<PlayerProps> = ({
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
       const action = videoPlayerKeyAction(event.key, event.shiftKey);
+      // Up and down keep scrolling the page unless the pointer is on the player or it is fullscreen.
+      if (
+        (action?.kind === "volume-up" || action?.kind === "volume-down")
+        && !isFullscreen
+        && !containerRef.current?.matches(":hover")
+      ) {
+        return;
+      }
       if (action && action.kind !== "exit-fullscreen") event.preventDefault();
       switch (action?.kind) {
         case "toggle-play":
