@@ -9,6 +9,7 @@ import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { SettingItem } from "./SettingItem";
 import { SettingsGroup } from "./SettingsGroup";
 import { DailyLimitRows } from "./DailyLimitRows";
+import { StreakCard } from "./StreakCard";
 import { TopChannelsCard } from "./TopChannelsCard";
 import { WatchTimeCard } from "./WatchTimeCard";
 
@@ -51,6 +52,7 @@ export function WellbeingSection() {
         />
       </SettingItem>
       <DailyLimitRows />
+      <StreakCard />
       <SettingItem
         title={getString("bedtime_reminder_title")}
         description={

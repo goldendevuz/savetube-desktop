@@ -254,6 +254,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     { title: "daily_limit_title", summary: "daily_limit_subtitle", keywords: ["wellbeing", "screen time", "usage", "limit", "time"] },
     { title: "daily_limit_time_title", summary: "daily_limit_time_description" },
     { title: "daily_limit_music_title", summary: "daily_limit_music_subtitle" },
+    { title: "streak_title", summary: "streak_needs_limit", keywords: ["streak", "days in a row", "badge", "achievement"] },
     { title: "bedtime_reminder_title", summary: "bedtime_reminder_subtitle", keywords: ["sleep", "wellbeing", "screen time"] },
     { title: "bedtime_start_title", summary: "bedtime_notification_note" },
     { title: "bedtime_end_title" },

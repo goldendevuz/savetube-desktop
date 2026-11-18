@@ -124,6 +124,8 @@ const SHARED: &[Shared] = &[
     shared("daily_time", DAILY_TALLY_KEY, Kind::Text),
     // Each device's published watch statistics, one JSON text. Merged on arrival, see `merge_watch_stats`.
     shared("watch_stats", WATCH_STATS_KEY, Kind::Text),
+    // The daily limit streak, one JSON text; the app merges it into its own copy before saving.
+    shared("limit_streak", "limit_streak", Kind::Text),
 ];
 
 /// Player, content and extension preferences only the desktop has. Download paths, proxy

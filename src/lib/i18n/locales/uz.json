@@ -3733,5 +3733,13 @@
   "watch_time_devices_title": "Bu hafta qurilmalar boʻyicha",
   "top_channels_all_devices": "Barcha qurilmalaringiz birgalikda",
   "time_zone_title": "Vaqt mintaqasi",
-  "time_zone_description": "Kunlik chegara uchun kun qayerdan boshlanishi va uyqu eslatmasi qaysi soatga qarab ishlashi"
+  "time_zone_description": "Kunlik chegara uchun kun qayerdan boshlanishi va uyqu eslatmasi qaysi soatga qarab ishlashi",
+  "streak_title": "Ketma-ket kunlar",
+  "streak_unit": "kun ketma-ket limit ichida",
+  "streak_best": "Eng yaxshi: %d",
+  "streak_next": "Keyingi nishon: %d kun",
+  "streak_all": "Barcha nishonlar olingan",
+  "streak_needs_limit": "Ketma-ket kunlarni boshlash uchun kunlik limitni yoqing",
+  "streak_milestone_title": "%d kun ketma-ket",
+  "streak_milestone_body": "Kunlik limitingizda %d kun ketma-ket qoldingiz."
 }
