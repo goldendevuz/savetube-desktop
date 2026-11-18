@@ -38,6 +38,9 @@ export function WellbeingSection() {
   const [bedtimeEnd, setBedtimeEnd] = usePreference(SETTINGS.BEDTIME_END, "07:00");
   const [breakOn, setBreakOn] = useBoolPref(SETTINGS.BREAK_REMINDER, false);
   const [breakFrequency, setBreakFrequency] = usePreference(SETTINGS.BREAK_FREQUENCY, "30");
+  const [windowOn, setWindowOn] = useBoolPref(SETTINGS.WATCH_WINDOW, false);
+  const [windowFrom, setWindowFrom] = usePreference(SETTINGS.WATCH_WINDOW_FROM, "07:00");
+  const [windowTo, setWindowTo] = usePreference(SETTINGS.WATCH_WINDOW_TO, "22:00");
   const [zoneChoice, setZone] = usePreference(SETTINGS.TIME_ZONE, "Asia/Tashkent");
   const zone = zoneOrDefault(zoneChoice);
   const sleepMs = sleepWindowMs(bedtimeStart, bedtimeEnd);
@@ -57,6 +60,19 @@ export function WellbeingSection() {
       </SettingItem>
       <DailyLimitRows />
       <StreakCard />
+      <SettingItem title={getString("watch_window_title")} description={getString("watch_window_subtitle")}>
+        <ToggleSwitch checked={windowOn} onChange={setWindowOn} />
+      </SettingItem>
+      {windowOn && (
+        <SettingItem title={getString("watch_window_from")}>
+          <TimeInput value={windowFrom} onChange={setWindowFrom} label={getString("watch_window_from")} />
+        </SettingItem>
+      )}
+      {windowOn && (
+        <SettingItem title={getString("watch_window_to")} description={getString("watch_window_to_note")}>
+          <TimeInput value={windowTo} onChange={setWindowTo} label={getString("watch_window_to")} />
+        </SettingItem>
+      )}
       <SettingItem
         title={getString("bedtime_reminder_title")}
         description={

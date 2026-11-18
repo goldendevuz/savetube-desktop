@@ -94,3 +94,13 @@ export function zoneLabel(zone: string, ms: number = Date.now()): string {
 export function hourIn(zone: string, ms: number): number {
   return Math.floor((((wallClockAsUtc(zone, ms) % DAY_MS) + DAY_MS) % DAY_MS) / 3_600_000);
 }
+
+/** The minute of day (0 to 1439) on `zone`'s clock at `ms`. */
+export function minuteOfDayIn(zone: string, ms: number): number {
+  return Math.floor((((wallClockAsUtc(zone, ms) % DAY_MS) + DAY_MS) % DAY_MS) / 60_000);
+}
+
+/** How long until `zone`'s clock passes midnight: when a new day (and a fresh daily limit) begins. */
+export function msUntilMidnightIn(zone: string, ms: number): number {
+  return DAY_MS - (((wallClockAsUtc(zone, ms) % DAY_MS) + DAY_MS) % DAY_MS);
+}

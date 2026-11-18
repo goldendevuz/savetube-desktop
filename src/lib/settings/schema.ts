@@ -209,6 +209,9 @@ export const SETTINGS = {
   DAILY_LIMIT_MUSIC: "daily_limit_music",
   DAILY_TALLY: "daily_tally",
   DAILY_LIMIT_DEVICE: "daily_limit_device",
+  WATCH_WINDOW: "watch_window",
+  WATCH_WINDOW_FROM: "watch_window_from",
+  WATCH_WINDOW_TO: "watch_window_to",
   WATCH_STATS: "watch_stats",
   LIMIT_STREAK: "limit_streak",
   DAILY_GOAL: "daily_goal",
@@ -488,6 +491,9 @@ export const SETTING_SCOPES = {
   [SETTINGS.WATCH_STATS]: "device",
   [SETTINGS.LIMIT_STREAK]: "profile",
   [SETTINGS.DAILY_GOAL]: "profile",
+  [SETTINGS.WATCH_WINDOW]: "profile",
+  [SETTINGS.WATCH_WINDOW_FROM]: "profile",
+  [SETTINGS.WATCH_WINDOW_TO]: "profile",
   // When this device was used, by hour of day: kept on this device.
   [SETTINGS.WATCH_HOURS]: "device",
   [SETTINGS.TIME_ZONE]: "profile",
@@ -855,6 +861,10 @@ export const SETTING_DEFINITIONS = [
   str(SETTINGS.LIMIT_STREAK, "content", "", "wired", undefined, "internal"),
   // Today's goal (JSON {"d", "t", "done", "u"}); synced as one text, the newer copy wins.
   str(SETTINGS.DAILY_GOAL, "content", "", "wired", undefined, "internal"),
+  // Watching hours: videos pause outside the window (wraps past midnight). Clock times "HH:MM" on the chosen time zone.
+  bool(SETTINGS.WATCH_WINDOW, "content", false, "wired"),
+  str(SETTINGS.WATCH_WINDOW_FROM, "content", "07:00", "wired"),
+  str(SETTINGS.WATCH_WINDOW_TO, "content", "22:00", "wired"),
   // Playing time of this device by day and hour (JSON, last 28 days); never synced.
   str(SETTINGS.WATCH_HOURS, "content", "", "wired", undefined, "internal"),
   // An IANA zone name ("Asia/Tashkent"); a day of the daily limit and the bedtime clock follow it.

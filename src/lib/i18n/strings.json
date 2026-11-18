@@ -3752,5 +3752,14 @@
   "hours_none": "Nothing counted yet. It fills in as you watch.",
   "hours_total": "%s on this device in the last 28 days",
   "session_chip": "Session %d min",
-  "session_title": "Time played since your last break of 5 minutes"
+  "session_title": "Time played since your last break of 5 minutes",
+  "watch_window_title": "Watching hours",
+  "watch_window_subtitle": "Videos pause outside the hours you choose",
+  "watch_window_from": "Opens at",
+  "watch_window_to": "Closes at",
+  "watch_window_to_note": "A window like 22:00 to 06:00 wraps past midnight",
+  "watch_window_closed_title": "Outside your watching hours",
+  "watch_window_closed_body": "Your watching hours are %1$s to %2$s. They open again in %3$s.",
+  "watch_window_closed_note": "You can change the hours in Settings, under Wellbeing.",
+  "daily_limit_resets_in": "Today's count starts again in %s"
 }

@@ -13,7 +13,7 @@ import {
   validMinutes,
   type DailyLimitSettings,
 } from "../../lib/wellbeing/dailyLimit";
-import { epochDayIn, zoneOrDefault } from "../../lib/wellbeing/timeZone";
+import { epochDayIn, msUntilMidnightIn, zoneOrDefault } from "../../lib/wellbeing/timeZone";
 import { setSettingValue, useAppSettingsStore } from "../../store/useAppSettingsStore";
 import { useDailyLimitStore } from "../../store/useDailyLimitStore";
 import { DailyLimitDevices } from "./DailyLimitDevices";
@@ -61,6 +61,20 @@ function WaitDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: 
   );
 }
 
+/** "Resets in 5 h 12 min": when the clock passes midnight and today's count starts again. */
+function ResetsIn({ zone }: { zone: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <p className="px-1 pb-1 text-xs tabular-nums text-chrome-neutral-400">
+      {getString("daily_limit_resets_in", spentTimeLabel(msUntilMidnightIn(zone, now)))}
+    </p>
+  );
+}
+
 /** The daily limit switch, and while it is on, how long it allows and whether music counts. */
 export function DailyLimitRows() {
   const values = useAppSettingsStore((s) => s.values);
@@ -101,6 +115,7 @@ export function DailyLimitRows() {
           <ToggleSwitch checked={current.countMusic} onChange={(countMusic) => change({ ...current, countMusic })} />
         </SettingItem>
       )}
+      {current.enabled && <ResetsIn zone={zoneOrDefault(values[SETTINGS.TIME_ZONE])} />}
       {current.enabled && <DailyLimitDevices />}
       {current.enabled && <p className="px-1 pb-2 text-xs text-chrome-neutral-400">{getString("daily_limit_footer")}</p>}
       {pending && (

@@ -3752,5 +3752,14 @@
   "hours_none": "Hali hisoblanmagan. Tomosha qilgan sari toʻlib boradi.",
   "hours_total": "Shu qurilmada oxirgi 28 kunda %s",
   "session_chip": "Seans %d daq",
-  "session_title": "Oxirgi 5 daqiqalik tanaffusdan beri oʻynalgan vaqt"
+  "session_title": "Oxirgi 5 daqiqalik tanaffusdan beri oʻynalgan vaqt",
+  "watch_window_title": "Tomosha soatlari",
+  "watch_window_subtitle": "Siz tanlagan soatlardan tashqarida videolar toʻxtatiladi",
+  "watch_window_from": "Ochiladi",
+  "watch_window_to": "Yopiladi",
+  "watch_window_to_note": "22:00 dan 06:00 gacha kabi oraliq yarim tundan oʻtadi",
+  "watch_window_closed_title": "Tomosha soatlaringizdan tashqari",
+  "watch_window_closed_body": "Tomosha soatlaringiz: %1$s dan %2$s gacha. Ular %3$s dan keyin yana ochiladi.",
+  "watch_window_closed_note": "Soatlarni Sozlamalar, Farovonlik boʻlimida oʻzgartirishingiz mumkin.",
+  "daily_limit_resets_in": "Bugungi hisob %s dan keyin qayta boshlanadi"
 }
