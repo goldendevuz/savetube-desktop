@@ -3741,5 +3741,16 @@
   "streak_all": "Every badge earned",
   "streak_needs_limit": "Turn on the daily limit to start a streak",
   "streak_milestone_title": "%d-day streak",
-  "streak_milestone_body": "You kept to your daily limit %d days in a row."
+  "streak_milestone_body": "You kept to your daily limit %d days in a row.",
+  "goal_title": "Today's goal",
+  "goal_hint": "One thing you want to get done today",
+  "goal_placeholder": "Write today's goal",
+  "goal_done": "Done",
+  "goal_clear": "Clear",
+  "hours_title": "When you watch",
+  "hours_peak": "Most of your watching happens at %s",
+  "hours_none": "Nothing counted yet. It fills in as you watch.",
+  "hours_total": "%s on this device in the last 28 days",
+  "session_chip": "Session %d min",
+  "session_title": "Time played since your last break of 5 minutes"
 }

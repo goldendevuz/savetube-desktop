@@ -56,6 +56,7 @@ import { Slider } from "../ui/Slider";
 import { useWheelVolume } from "../../lib/useWheelVolume";
 import { useVolumeLevel } from "../../lib/audio/volumeBoost";
 import { usePlayerButton } from "../../lib/playerButtons";
+import { SessionChip } from "./SessionChip";
 import { SETTINGS } from "../../lib/settings/schema";
 import { useAppSettingsStore } from "../../store/useAppSettingsStore";
 
@@ -794,6 +795,7 @@ export const FlowPlayerControls: React.FC<FlowPlayerControlsProps> = ({
                     </>
                   )}
                 </div>
+                <SessionChip />
                 {isLive && (
                   <button
                     type="button"

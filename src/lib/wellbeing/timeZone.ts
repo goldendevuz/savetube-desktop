@@ -89,3 +89,8 @@ export function zoneLabel(zone: string, ms: number = Date.now()): string {
   const mm = String(abs % 60).padStart(2, "0");
   return `${zone} (UTC${sign}${hh}:${mm})`;
 }
+
+/** The hour of day (0 to 23) on `zone`'s clock at `ms`. */
+export function hourIn(zone: string, ms: number): number {
+  return Math.floor((((wallClockAsUtc(zone, ms) % DAY_MS) + DAY_MS) % DAY_MS) / 3_600_000);
+}

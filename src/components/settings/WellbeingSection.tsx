@@ -10,6 +10,8 @@ import { SettingItem } from "./SettingItem";
 import { SettingsGroup } from "./SettingsGroup";
 import { DailyLimitRows } from "./DailyLimitRows";
 import { StreakCard } from "./StreakCard";
+import { GoalCard } from "./GoalCard";
+import { HoursCard } from "./HoursCard";
 import { TopChannelsCard } from "./TopChannelsCard";
 import { WatchTimeCard } from "./WatchTimeCard";
 
@@ -42,7 +44,9 @@ export function WellbeingSection() {
 
   return (
     <SettingsGroup title={getString("settings_group_wellbeing")}>
+      <GoalCard />
       <WatchTimeCard />
+      <HoursCard />
       <TopChannelsCard />
       <SettingItem title={getString("time_zone_title")} description={getString("time_zone_description")}>
         <Select

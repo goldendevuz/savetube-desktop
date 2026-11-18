@@ -76,7 +76,7 @@ export async function keepWatching(minutes: number): Promise<void> {
 }
 
 /** Whether a video is playing: the video player, or a Short (its video element carries `data-watch-time`). */
-function videoPlaying(): boolean {
+export function videoPlaying(): boolean {
   if (usePlayerStore.getState().isPlaying) return true;
   for (const element of document.querySelectorAll<HTMLVideoElement>("video[data-watch-time]")) {
     if (!element.paused && !element.ended && element.readyState > 2) return true;
@@ -84,7 +84,7 @@ function videoPlaying(): boolean {
   return false;
 }
 
-function musicPlaying(): boolean {
+export function musicPlaying(): boolean {
   return useMusicPlayerStore.getState().isPlaying;
 }
 

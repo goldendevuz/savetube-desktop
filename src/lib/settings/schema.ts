@@ -211,6 +211,8 @@ export const SETTINGS = {
   DAILY_LIMIT_DEVICE: "daily_limit_device",
   WATCH_STATS: "watch_stats",
   LIMIT_STREAK: "limit_streak",
+  DAILY_GOAL: "daily_goal",
+  WATCH_HOURS: "watch_hours",
   TIME_ZONE: "time_zone",
   SHOW_REGION_PICKER_IN_EXPLORE: "show_region_picker_in_explore",
   TRENDING_REGION: "trending_region",
@@ -485,6 +487,9 @@ export const SETTING_SCOPES = {
   [SETTINGS.DAILY_LIMIT_DEVICE]: "device",
   [SETTINGS.WATCH_STATS]: "device",
   [SETTINGS.LIMIT_STREAK]: "profile",
+  [SETTINGS.DAILY_GOAL]: "profile",
+  // When this device was used, by hour of day: kept on this device.
+  [SETTINGS.WATCH_HOURS]: "device",
   [SETTINGS.TIME_ZONE]: "profile",
   [SETTINGS.SHOW_REGION_PICKER_IN_EXPLORE]: "device",
   [SETTINGS.TRENDING_REGION]: "device",
@@ -848,6 +853,10 @@ export const SETTING_DEFINITIONS = [
   str(SETTINGS.WATCH_STATS, "content", "", "wired", undefined, "internal"),
   // The daily limit streak (JSON {"s", "b", "best", "a"}); synced as one text, merged in limitStreak.ts.
   str(SETTINGS.LIMIT_STREAK, "content", "", "wired", undefined, "internal"),
+  // Today's goal (JSON {"d", "t", "done", "u"}); synced as one text, the newer copy wins.
+  str(SETTINGS.DAILY_GOAL, "content", "", "wired", undefined, "internal"),
+  // Playing time of this device by day and hour (JSON, last 28 days); never synced.
+  str(SETTINGS.WATCH_HOURS, "content", "", "wired", undefined, "internal"),
   // An IANA zone name ("Asia/Tashkent"); a day of the daily limit and the bedtime clock follow it.
   str(SETTINGS.TIME_ZONE, "content", "Asia/Tashkent", "wired"),
   bool(SETTINGS.SHOW_REGION_PICKER_IN_EXPLORE, "content", true, "wired"),

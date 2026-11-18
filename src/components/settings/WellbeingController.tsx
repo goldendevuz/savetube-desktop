@@ -1,6 +1,7 @@
 import { usePublishStats } from "../../lib/wellbeing/useCombinedStats";
 import { useDailyLimit } from "../../lib/wellbeing/useDailyLimit";
 import { useLimitStreak } from "../../lib/wellbeing/useLimitStreak";
+import { useWatchTracking } from "../../lib/wellbeing/useWatchTracking";
 import { useFocusModes } from "../../lib/useFocusModes";
 import { useWellbeingReminders } from "../../lib/wellbeing/useWellbeingReminders";
 import { DailyLimitDialog } from "./DailyLimitDialog";
@@ -11,6 +12,7 @@ export function WellbeingController() {
   useFocusModes();
   useDailyLimit();
   useLimitStreak();
+  useWatchTracking();
   usePublishStats();
   return <DailyLimitDialog />;
 }

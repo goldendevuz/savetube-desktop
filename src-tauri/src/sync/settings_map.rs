@@ -126,6 +126,8 @@ const SHARED: &[Shared] = &[
     shared("watch_stats", WATCH_STATS_KEY, Kind::Text),
     // The daily limit streak, one JSON text; the app merges it into its own copy before saving.
     shared("limit_streak", "limit_streak", Kind::Text),
+    // Today's goal, one JSON text; the copy with the newer edit time wins.
+    shared("daily_goal", "daily_goal", Kind::Text),
 ];
 
 /// Player, content and extension preferences only the desktop has. Download paths, proxy

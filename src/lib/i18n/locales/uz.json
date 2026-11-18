@@ -3741,5 +3741,16 @@
   "streak_all": "Barcha nishonlar olingan",
   "streak_needs_limit": "Ketma-ket kunlarni boshlash uchun kunlik limitni yoqing",
   "streak_milestone_title": "%d kun ketma-ket",
-  "streak_milestone_body": "Kunlik limitingizda %d kun ketma-ket qoldingiz."
+  "streak_milestone_body": "Kunlik limitingizda %d kun ketma-ket qoldingiz.",
+  "goal_title": "Bugungi maqsad",
+  "goal_hint": "Bugun bajarmoqchi boʻlgan bitta ish",
+  "goal_placeholder": "Bugungi maqsadni yozing",
+  "goal_done": "Bajarildi",
+  "goal_clear": "Tozalash",
+  "hours_title": "Qaysi soatda koʻrasiz",
+  "hours_peak": "Koʻproq tomosha %s da boʻladi",
+  "hours_none": "Hali hisoblanmagan. Tomosha qilgan sari toʻlib boradi.",
+  "hours_total": "Shu qurilmada oxirgi 28 kunda %s",
+  "session_chip": "Seans %d daq",
+  "session_title": "Oxirgi 5 daqiqalik tanaffusdan beri oʻynalgan vaqt"
 }
